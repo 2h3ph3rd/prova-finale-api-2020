@@ -11,7 +11,15 @@ run:
 	$(BUILD_FILE)
 
 memcheck:
-	valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes ./program_to_run
+	valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes $(BUILD_FILE)
+
+callgrind:
+	valgrind --tool=callgrind --dump-instr=yes --callgrind-out-file=callgrind.out $(BUILD_FILE)
+	kcachegrind callgrind.out
+
+massif:
+	valgrind --tool=massif --massif-out-file=massif.out $(BUILD_FILE)
+	ms_print massif.out
 
 test: test-writeonly
 
