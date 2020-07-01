@@ -1,5 +1,5 @@
-ERROR_MESSAGE = && echo "--- TEST SUCCESS ---\n" || echo "!!! --- TEST ERROR --- !!!\n"
-TEST_PATH = ./tests/
+TEST_MESSAGE = && echo "--- TEST SUCCESS ---\n" || echo "!!! --- TEST ERROR --- !!!\n"
+TEST_BASE_PATH = ./tests
 
 all: build run
 
@@ -11,11 +11,13 @@ run:
 
 test: test-writeonly
 
+TEST_PATH = $(TEST_BASE_PATH)/writeonly
+
 test-writeonly:
 	@echo writeonly 1
-	@./main.out < $(TEST_PATH)/writeonly/1_input.txt > $(TEST_PATH)/writeonly/1.txt
-	@cmp --silent $(TEST_PATH)/writeonly/1.txt $(TEST_PATH)/writeonly/1_output.txt && echo "writeonly 1" $(ERROR_MESSAGE)
+	@cat $(TEST_PATH)/1_input.txt | ./main.out > $(TEST_PATH)/1.txt
+	@cmp --silent $(TEST_PATH)/1.txt $(TEST_PATH)/1_output.txt && echo "writeonly 1" $(TEST_MESSAGE)
 
-	@./main.out < $(TEST_PATH)/writeonly/2_input.txt > $(TEST_PATH)/writeonly/2.txt
+	@./main.out < $(TEST_PATH)/2_input.txt > $(TEST_PATH)/2.txt
 	@echo writeonly 2
-	@cmp --silent $(TEST_PATH)/writeonly/2.txt $(TEST_PATH)/writeonly/2.txt $(ERROR_MESSAGE)
+	@cmp --silent $(TEST_PATH)/2.txt $(TEST_PATH)/2_output.txt $(TEST_MESSAGE)
