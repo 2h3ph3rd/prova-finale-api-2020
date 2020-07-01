@@ -21,7 +21,7 @@ massif:
 	valgrind --tool=massif --massif-out-file=massif.out $(BUILD_FILE)
 	ms_print massif.out
 
-test: test-writeonly
+test: build test-writeonly
 
 TEST_PATH = $(TEST_BASE_PATH)/writeonly
 
