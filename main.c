@@ -56,10 +56,41 @@ char readCommandType() {
     return line[0];
 }
 
+void printText(char** text) {
+    int i, j;
+    char* line;
+
+    i = 0;
+    while(text[i] != NULL) {
+
+        j = 0;
+        line = text[i];
+        while (line[j] != '\0') {
+            putchar(line[j]);
+            j++;
+        }
+
+        i++;
+    }
+}
+
 int main() {
     char** text;
     char commandType;
     int start, end;
+
+    char str1 = "Test test 1\0";
+    char str2 = "Test test 2\0";
+    char str3 = "Test test 3\0";
+
+    text = malloc(sizeof(char*) * 4);
+    text[0] = &str1;
+    text[1] = &str2;
+    text[2] = &str3;
+    text[3] = NULL;
+
+    printText(text);
+    /*
 
     while(commandType != 'q') {
         commandType = readCommandType();
@@ -67,7 +98,7 @@ int main() {
 
     return 0;
 
-    /*
+    
     if(line[0] == 'q') {
         return 0;
     }
