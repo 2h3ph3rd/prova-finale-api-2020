@@ -15,6 +15,7 @@ int main()
 	char resultPath[100];
 
     char *folders[100] = {
+		"/onlyQuit",
         "/changeAndPrint",
 		"/publicTests/writeonly1",
 		"/publicTests/writeonly2"

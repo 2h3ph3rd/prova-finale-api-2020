@@ -33,9 +33,8 @@ char readCommandType() {
     char* line;
 
     line = readLine(buffer);
-    printLine(line);
 
-    return line[0];
+    return line[stringSize(line) - 1];
 }
 
 char* readLine(char* buffer) {
@@ -83,6 +82,9 @@ int main() {
 
     while(commandType != 'q') {
         switch(commandType) {
+            case 'c':
+                // changeCommand(text);
+            break;
             case 'p':
                 printCommand(text, 1, 3);
             break;
@@ -91,40 +93,8 @@ int main() {
                 return 1;
             break;
         }
+        commandType = readCommandType();
     }
 
     return 0;
-
-    /*
-
-    if(line[0] == 'q') {
-        return 0;
-    }
-
-    do {
-
-        command = line[3];
-
-        switch(command) {
-            case 'c':
-                start = line[0];
-                end = line[1];
-                while (line[0] != '.') {
-                    line = readLine();
-                    text[start] = line;
-                    start++;
-                }
-            break;
-            case 'p':
-                print(text, (int) line[0], (int) line[2]);
-            break;
-        }
-
-        line = readLine();
-        printLine(line);
-
-    } while (line[0] != '0');
-
-    return 0;
-    */
 }

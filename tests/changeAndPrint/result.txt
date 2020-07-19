@@ -1,2 +1,1 @@
-1,3c
 ERROR: cannot identify command type
