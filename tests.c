@@ -66,5 +66,7 @@ int main()
 		i++;
 	}
 
+	printf("Finished all tests\n");
+
 	return 0;
 }
