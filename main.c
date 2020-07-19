@@ -3,14 +3,39 @@
 
 #define MAX_CHAR 255
 
-void print(char**, int, int);
+#define MAX_LINES_NUMBER 1000
+
+// ----- PROTOTYPES -----
+
+// commands
+void printCommand(char**, int, int);
+
+// i/o utilities
+char readCommandType();
 char* readLine(char*);
 void printLine(char*);
 
-void print(char **text, int start, int end) {
-    for(int i = start; i < end; i++) {
-        printf("%s/n", text[i]);
+// other utilities
+int stringSize(char* string);
+
+// ----- COMMANDS FUNCTION -----
+
+void printCommand(char **text, int start, int end) {
+    for(int i = start - 1; i < end; i++) {
+        printf("%s", text[i]);
     }
+}
+
+// ----- I/O UTILITIES FUNCTION -----
+
+char readCommandType() {
+    char buffer[MAX_CHAR];
+    char* line;
+
+    line = readLine(buffer);
+    printLine(line);
+
+    return line[0];
 }
 
 char* readLine(char* buffer) {
@@ -40,56 +65,27 @@ void printLine(char* line) {
     putchar('\n');
 }
 
+// ----- OTHER UTILITIES FUNCTION -----
+
 int stringSize(char* string) {
     int count = 0;
     while(string[count] != '\0') count++;
     return count;
 }
 
-char readCommandType() {
-    char buffer[MAX_CHAR];
-    char* line;
-
-    line = readLine(buffer);
-    printLine(line);
-
-    return line[0];
-}
-
-void printText(char** text) {
-    int i, j;
-    char* line;
-
-    i = 0;
-    while(text[i] != NULL) {
-
-        j = 0;
-        line = text[i];
-        while (line[j] != '\0') {
-            putchar(line[j]);
-            j++;
-        }
-
-        i++;
-    }
-}
+// ----- MAIN -----
 
 int main() {
-    char** text;
+    char *text[MAX_LINES_NUMBER] = {
+        "Test test 1\n\0",
+        "Test test 2\n\0",
+        "Test test 3\n\0",
+        "\0"
+    };
     char commandType;
     int start, end;
 
-    char str1 = "Test test 1\0";
-    char str2 = "Test test 2\0";
-    char str3 = "Test test 3\0";
-
-    text = malloc(sizeof(char*) * 4);
-    text[0] = &str1;
-    text[1] = &str2;
-    text[2] = &str3;
-    text[3] = NULL;
-
-    printText(text);
+    printCommand(text, 1, 3);
     /*
 
     while(commandType != 'q') {
@@ -98,7 +94,6 @@ int main() {
 
     return 0;
 
-    
     if(line[0] == 'q') {
         return 0;
     }
