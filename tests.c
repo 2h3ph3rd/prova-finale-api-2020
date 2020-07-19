@@ -23,9 +23,6 @@ int main()
 	int i = 0;
 
 	while(folders[i] != NULL) {
-		printf("Testing in %s\n", folders[i]);
-
-
 		// make path
 		strcpy(path, "./tests");
 		strcat(path, folders[i]);
@@ -59,7 +56,9 @@ int main()
 		strcat(command, resultPath);
 		strcat(command, " ");
 		strcat(command, outputPath);
-		strcat(command, " &&  echo \'PASSED\' || echo \'---- ERROR ----- \'");
+		strcat(command, " || echo \'----- ERROR IN ");
+		strcat(command, folders[i]);
+		strcat(command, " -----\'");
 
 		system(command);
 

@@ -94,10 +94,8 @@ int main() {
     }
 
     return 0;
-    
-    
+
     /*
-    
 
     if(line[0] == 'q') {
         return 0;
