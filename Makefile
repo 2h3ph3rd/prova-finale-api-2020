@@ -1,6 +1,6 @@
 BUILD_FILE = ./main.out
 TEST_MESSAGE = && echo "--- TEST SUCCESS ---\n" || echo "!!! --- TEST ERROR --- !!!\n"
-TEST_BASE_PATH = ./tests
+TEST_FOLDER_PATH = ./tests
 
 all: build run
 
@@ -21,15 +21,6 @@ massif:
 	valgrind --tool=massif --massif-out-file=massif.out $(BUILD_FILE)
 	ms_print massif.out
 
-test: build test-writeonly
-
-TEST_PATH = $(TEST_BASE_PATH)/writeonly
-
-test-writeonly:
-	@echo writeonly 1
-	@cat $(TEST_PATH)/1_input.txt | $(BUILD_FILE) > $(TEST_PATH)/1.txt
-	@cmp --silent $(TEST_PATH)/1.txt $(TEST_PATH)/1_output.txt && echo "writeonly 1" $(TEST_MESSAGE)
-
-	@cat $(TEST_PATH)/2_input.txt | $(BUILD_FILE) > $(TEST_PATH)/2.txt
-	@echo writeonly 2
-	@cmp --silent $(TEST_PATH)/2.txt $(TEST_PATH)/2_output.txt $(TEST_MESSAGE)
+test: build
+	gcc -o tests.out tests.c
+	./tests.out

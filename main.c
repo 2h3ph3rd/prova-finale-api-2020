@@ -76,23 +76,28 @@ int stringSize(char* string) {
 // ----- MAIN -----
 
 int main() {
-    char *text[MAX_LINES_NUMBER] = {
-        "Test test 1\n\0",
-        "Test test 2\n\0",
-        "Test test 3\n\0",
-        "\0"
-    };
+    char *text[MAX_LINES_NUMBER];
     char commandType;
-    int start, end;
 
-    printCommand(text, 1, 3);
-    /*
+    commandType = readCommandType();
 
     while(commandType != 'q') {
-        commandType = readCommandType();
+        switch(commandType) {
+            case 'p':
+                printCommand(text, 1, 3);
+            break;
+            default:
+                printf("ERROR: cannot identify command type");
+                return 1;
+            break;
+        }
     }
 
     return 0;
+    
+    
+    /*
+    
 
     if(line[0] == 'q') {
         return 0;
