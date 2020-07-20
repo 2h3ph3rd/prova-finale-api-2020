@@ -1,41 +1,53 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define MAX_CHAR 255
+#define DEBUG
+#define BUFFER_SIZE 255
 
-#define MAX_LINES_NUMBER 1000
+// ----- TYPES -----
+
+typedef enum boolean { false, true } t_boolean;
+
+typedef struct command {
+    char type;
+    int start;
+    int end;
+    char **data;
+} t_command;
+
+typedef struct text {
+    char **lines;
+    int last_line;
+} t_text;
 
 // ----- PROTOTYPES -----
 
 // commands
-void printCommand(char**, int, int);
+void printCommand(t_command, t_text);
+// void changeCommand(char**, int, int);
 
 // i/o utilities
-char readCommandType();
-char* readLine(char*);
-void printLine(char*);
+char* readLine(char *);
+void printLine(char *);
+
+// read command
+t_command readCommand();
+void readCommandType(t_command *, char *);
+void readCommandStartAndEnd(t_command *, char *);
 
 // other utilities
 int stringSize(char* string);
+int splitToNumber(char *, char, char);
 
 // ----- COMMANDS FUNCTION -----
 
-void printCommand(char **text, int start, int end) {
-    for(int i = start - 1; i < end; i++) {
-        printf("%s", text[i]);
+void printCommand(t_command command, t_text text) {
+    for(int i = command.start - 1; i < command.end; i++) {
+        printf("%s", text.lines[i]);
     }
 }
 
 // ----- I/O UTILITIES FUNCTION -----
-
-char readCommandType() {
-    char buffer[MAX_CHAR];
-    char* line;
-
-    line = readLine(buffer);
-
-    return line[stringSize(line) - 1];
-}
 
 char* readLine(char* buffer) {
     int i = 0;
@@ -64,6 +76,75 @@ void printLine(char* line) {
     putchar('\n');
 }
 
+// ----- READ COMMAND -----
+
+t_command readCommand() {
+    t_command command;
+    char buffer[BUFFER_SIZE];
+    char* line;
+
+    line = readLine(buffer);
+
+    readCommandType(&command, line);
+    #ifdef DEBUG
+    printf("command type: %c\n", command.type);
+    #endif
+
+    readCommandStartAndEnd(&command, line);
+    #ifdef DEBUG
+    printf("command start: %d\n", command.start);
+    printf("command end: %d\n", command.end);
+    #endif
+
+    return command;
+}
+
+void readCommandType(t_command *command, char *line)
+{
+    // command type is always the last char of the line
+    command -> type = line[stringSize(line) - 1];
+    return;
+}
+
+void readCommandStartAndEnd(t_command *command, char *line)
+{
+    char numStr[BUFFER_SIZE];
+    // counter for line
+    int i = 0;
+    // counter for numStr
+    int j = 0;
+
+    // initialize values
+    command -> start = 0;
+    command -> end = 0;
+
+    // read start
+    while(line[i] != ',' && line[i] != command -> type)
+    {
+        numStr[j] = line[i];
+        i++;
+        j++;
+    }
+
+    numStr[j] = '\0';
+    command -> start = atoi(numStr);
+
+    if(line[i] == ',')
+    {
+        j = 0;
+        i++;
+        while(line[i] != command -> type)
+        {
+            numStr[j] = line[i];
+            i++;
+            j++;
+        }
+        numStr[j] = '\0';
+        command -> end = atoi(numStr);
+    }
+    return;
+}
+
 // ----- OTHER UTILITIES FUNCTION -----
 
 int stringSize(char* string) {
@@ -75,25 +156,25 @@ int stringSize(char* string) {
 // ----- MAIN -----
 
 int main() {
-    char *text[MAX_LINES_NUMBER];
-    char commandType;
+    t_text text;
+    t_command command;
 
-    commandType = readCommandType();
+    command = readCommand();
 
-    while(commandType != 'q') {
-        switch(commandType) {
+    while(command.type != 'q') {
+        switch(command.type) {
             case 'c':
                 // changeCommand(text);
             break;
             case 'p':
-                printCommand(text, 1, 3);
+                // printCommand(text);
             break;
             default:
-                printf("ERROR: cannot identify command type");
+                printf("ERROR: cannot identify command type\n");
                 return 1;
             break;
         }
-        commandType = readCommandType();
+        command = readCommand();
     }
 
     return 0;
