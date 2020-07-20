@@ -24,3 +24,6 @@ massif:
 test: build
 	gcc -o tests.out tests.c
 	./tests.out
+
+clean:
+	rm *.out
