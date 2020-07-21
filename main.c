@@ -69,9 +69,6 @@ void changeCommand(t_text *text, char *line)
     readCommandStartAndEnd(&command, line);
     command.data = readCommandData(command);
     command.prevData = readText(*text, command.start, command.end);
-    printf("%s\n", command.data[0]);
-    printf("%s\n", command.data[1]);
-    printf("%s\n", command.data[2]);
     text -> numLines = writeText(text, command.data, command.start, command.end);
     return;
 }
@@ -147,7 +144,7 @@ char* readLine() {
         // if current size is bigger than current buffer, increase dimension
         if(i > sizeof(buffer))
         {
-            buffer = realloc(buffer, sizeof(buffer) * (numRealloc + 1) * STRING_BUFFER_SIZE);
+            buffer = realloc(buffer, sizeof(*buffer) * (numRealloc + 1) * STRING_BUFFER_SIZE);
         }
         buffer[i] = c;
         i++;
@@ -155,9 +152,9 @@ char* readLine() {
         c = getchar();
     }
     // if current size is bigger than current buffer, increase dimension
-    if(i > sizeof(buffer))
+    if(i > sizeof(*buffer))
     {
-        buffer = realloc(buffer, sizeof(buffer) * (numRealloc + 1));
+        buffer = realloc(buffer, sizeof(*buffer) * (numRealloc + 1) * STRING_BUFFER_SIZE);
     }
     buffer[i] = '\0';
 
