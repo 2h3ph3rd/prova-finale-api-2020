@@ -7,6 +7,9 @@ all: build run
 build:
 	/usr/bin/gcc -DEVAL -std=gnu11 -O2 -pipe -static -s -o $(BUILD_FILE) main.c -lm
 
+prod:
+	python cminify-1.1.1/minifier.py ./main.c > prod.c
+
 run:
 	$(BUILD_FILE)
 
