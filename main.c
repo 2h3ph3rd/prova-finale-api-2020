@@ -2,7 +2,7 @@
 #include <stdlib.h>
 
 #define DEBUG
-#define STRING_BUFFER_SIZE 255
+#define MAX_LINE_LENGTH 1024
 #define HISTORY_BUFFER_SIZE 100
 
 // ----- TYPES -----
@@ -49,17 +49,23 @@ int splitToNumber(char *, char, char);
 
 void printCommand(t_text text, char *line) {
     t_command command;
+    int last;
     command.type = 'p';
     readCommandStartAndEnd(&command, line);
 
     if(command.start > text.numLines)
         return;
     if(command.end > text.numLines)
-        command.end = text.numLines;
+        last = text.numLines;
+    else
+        last = command.end;
     command.data = readText(text, command.start, command.end);
 
-    for(int i = 0; i < command.end - command.start + 1; i++)
+    for(int i = 0; i < last; i++)
         printf("%s\n", command.data[i]);
+
+    for(int i = text.numLines; i < command.end; i++)
+        printf(".\n");
 }
 
 void changeCommand(t_text *text, char *line)
@@ -135,26 +141,16 @@ int writeText(t_text *text, char **newData, int start, int end)
 char* readLine() {
     int i = 0;
     char c;
-    char *buffer = malloc(sizeof(char) * STRING_BUFFER_SIZE);
+    char *buffer = malloc(sizeof(char) * MAX_LINE_LENGTH + 1);
     int numRealloc = 0;
 
     c = getchar();
 
     while (c != '\n') {
-        // if current size is bigger than current buffer, increase dimension
-        if(i > sizeof(buffer))
-        {
-            buffer = realloc(buffer, sizeof(*buffer) * (numRealloc + 1) * STRING_BUFFER_SIZE);
-        }
         buffer[i] = c;
         i++;
 
         c = getchar();
-    }
-    // if current size is bigger than current buffer, increase dimension
-    if(i > sizeof(*buffer))
-    {
-        buffer = realloc(buffer, sizeof(*buffer) * (numRealloc + 1) * STRING_BUFFER_SIZE);
     }
     buffer[i] = '\0';
 
@@ -204,7 +200,7 @@ char **readCommandData(t_command command)
 
 void readCommandStartAndEnd(t_command *command, char *line)
 {
-    char numStr[STRING_BUFFER_SIZE];
+    char numStr[MAX_LINE_LENGTH];
     // counter for line
     int i = 0;
     // counter for numStr
