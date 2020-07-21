@@ -1,0 +1,13 @@
+1,3c
+Riga 1
+Riga 2
+Riga 3
+.
+1,3p
+2,4c
+Nuova riga 2
+Nuova riga 3
+Riga 4
+.
+1,4p
+q
