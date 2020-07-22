@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define DEBUG
 #define MAX_LINE_LENGTH 1024
 #define HISTORY_BUFFER_SIZE 100
 
@@ -217,8 +216,8 @@ void printCommand(t_command command, t_text text)
     // check if start is in text
     if(command.start > text.numLines)
     {
-        first = command.start;
-        last = command.end + 1;
+        for(int i = command.start; i < command.end + 1; i++)
+            printf(".\n");
     }
     else
     {
@@ -233,10 +232,10 @@ void printCommand(t_command command, t_text text)
 
         for(int i = 0; i < last; i++)
             printf("%s\n", command.data[i]);
-    }
 
-    for(int i = first; i < last; i++)
-        printf(".\n");
+        for(int i = text.numLines; i < command.end; i++)
+            printf("%s\n", command.data[i]);
+    }
 }
 
 void changeCommand(t_command *command, t_text *text)
@@ -296,30 +295,26 @@ t_text createText()
 {
     t_text text;
     text.numLines = 0;
+    text.lines = malloc(sizeof(t_line));
     return text;
 }
 char **readText(t_text text, int start, int end)
 {
-    int dim = end - start + 1;
     t_line *curr;
     char **data;
     int lineNumber = 0;
     int readLineNumber = 0;
-    // check if end is bigger than start, otherwise no data to read
-    if(dim == -1)
-    {
-        return NULL;
-    }
 
-    data = malloc(sizeof(char *) * dim);
+    // allocate an array of strings
+    // 1,3c -> 3 - 1 + 1 = 3 lines to write
+    data = malloc(sizeof(char *) * (end - start + 1));
 
     // check if end not exceed numLines, otherwise end must be decrease to it
     if(end > text.numLines)
         end = text.numLines;
 
-    // set first element
+    // read first element
     curr = text.lines;
-
     lineNumber = 1;
 
     // move to start
@@ -329,7 +324,7 @@ char **readText(t_text text, int start, int end)
         lineNumber++;
     }
     // read lines
-    while(lineNumber < end)
+    while(lineNumber < end + 1)
     {
         data[readLineNumber] = curr->line;
         lineNumber++;
@@ -341,34 +336,32 @@ char **readText(t_text text, int start, int end)
 
 int writeText(t_text *text, char **newData, int start, int end)
 {
-    int dim = end - start + 1;
     t_line *curr;
-    char **data;
     int lineNumber = 0;
     int writeLineNumber = 0;
     int newLines = 0;
-    // cannot write out of text or zero lines
-    if(start > text -> numLines + 1 || dim < 1)
-        return text -> numLines;
 
+    // cannot write out of text or zero lines
+    if(start > text -> numLines + 1)
+        return text -> numLines;
 
     // read first element
     curr = text->lines;
     lineNumber = 1;
 
     // move to start
-    while(lineNumber < start)
+    while(lineNumber < start && lineNumber < text -> numLines)
     {
         curr = curr->next;
         lineNumber++;
     }
     // write lines
-    while(lineNumber < end)
+    while(lineNumber < end + 1)
     {
         if(lineNumber > text -> numLines)
         {
             newLines++;
-            curr -> next = malloc(sizeof(char) * stringSize(newData[writeLineNumber]));
+            curr -> next = malloc(sizeof(t_line));
         }
         else
         {
@@ -377,12 +370,7 @@ int writeText(t_text *text, char **newData, int start, int end)
         curr -> line = newData[writeLineNumber];
         lineNumber++;
         writeLineNumber++;
-        curr = curr->next;
-    }
-    newLines = end - text -> numLines;
-    if(newLines < 0)
-    {
-        newLines = 0;
+        curr = curr -> next;
     }
     return text -> numLines + newLines;
 }
@@ -438,11 +426,7 @@ int main() {
     */
 
     command = readCommand();
-    #ifdef DEBUG
-        printf("Command type: %c\n", command.type);
-        printf("Command start: %d\n", command.start);
-        printf("Command end: %d\n", command.end);
-    #endif
+
     while(command.type != 'q')
     {
         executeCommand(&command, &text, &history);
@@ -453,6 +437,7 @@ int main() {
             printf("Command type: %c\n", command.type);
             printf("Command start: %d\n", command.start);
             printf("Command end: %d\n", command.end);
+            printf("Text length: %d\n", text.numLines);
         #endif
     }
 
