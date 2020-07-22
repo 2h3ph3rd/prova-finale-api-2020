@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+// #define DEBUG
 #define MAX_LINE_LENGTH 1024
 #define HISTORY_BUFFER_SIZE 100
 
@@ -210,9 +211,12 @@ void executeCommand(t_command *command, t_text *text, t_history *history)
 
 void printCommand(t_command command, t_text text)
 {
-    int first;
-    int last;
-
+    int textLines;
+    if(command.start == 0)
+    {
+        printf(".\n");
+        command.start++;
+    }
     // check if start is in text
     if(command.start > text.numLines)
     {
@@ -221,20 +225,19 @@ void printCommand(t_command command, t_text text)
     }
     else
     {
-        first = command.start;
         // check for overflow
         if(command.end > text.numLines)
-            last = text.numLines;
+            textLines = 0;
         else
-            last = command.end;
+            textLines = command.end - command.start + 1;
 
         command.data = readText(text, command.start, command.end);
 
-        for(int i = 0; i < last; i++)
+        for(int i = 0; i < textLines; i++)
             printf("%s\n", command.data[i]);
 
         for(int i = text.numLines; i < command.end; i++)
-            printf("%s\n", command.data[i]);
+            printf(".\n");
     }
 }
 
@@ -350,7 +353,7 @@ int writeText(t_text *text, char **newData, int start, int end)
     lineNumber = 1;
 
     // move to start
-    while(lineNumber < start && lineNumber < text -> numLines)
+    while(lineNumber < start && lineNumber <= text -> numLines)
     {
         curr = curr->next;
         lineNumber++;
@@ -362,6 +365,10 @@ int writeText(t_text *text, char **newData, int start, int end)
         {
             newLines++;
             curr -> next = malloc(sizeof(t_line));
+            if(lineNumber == 1)
+            {
+                text -> lines = curr;
+            }
         }
         else
         {
