@@ -184,58 +184,41 @@ void readCommandStartAndEnd(t_command *command, char *line)
 
 void executeCommand(t_command *command, t_text *text, t_history *history)
 {
-    switch(command -> type)
-    {
-        case 'p':
-            printCommand(*command, *text);
-        break;
-        case 'c':
-            changeCommand(command, text);
-        break;
-        case 'd':
-            deleteCommand(command, text);
-        break;
-        case 'u':
-            undoCommand(*command, text, history);
-        break;
-        case 'r':
-            redoCommand(*command, text, history);
-        break;
-        #ifdef DEBUG
-        default:
-            printf("ERROR: cannot identify command type\n");
-        break;
-        #endif
-    }
+    switch(command -> type) {
+            case 'p':
+                printCommand(*command, *text);
+            break;
+            case 'c':
+                changeCommand(command, text);
+            break;
+            case 'd':
+                deleteCommand(command, text);
+            break;
+            case 'u':
+                undoCommand(*command, text, history);
+            break;
+            case 'r':
+                redoCommand(*command, text, history);
+            break;
+        }
 }
 
 void printCommand(t_command command, t_text text)
 {
-    int first;
     int last;
 
-    // check if start is in text
     if(command.start > text.numLines)
-    {
-        first = command.start;
-        last = command.end + 1;
-    }
+        return;
+    if(command.end > text.numLines)
+        last = text.numLines;
     else
-    {
-        first = command.start;
-        // check for overflow
-        if(command.end > text.numLines)
-            last = text.numLines;
-        else
-            last = command.end;
+        last = command.end;
+    command.data = readText(text, command.start, command.end);
 
-        command.data = readText(text, command.start, command.end);
+    for(int i = 0; i < last; i++)
+        printf("%s\n", command.data[i]);
 
-        for(int i = 0; i < last; i++)
-            printf("%s\n", command.data[i]);
-    }
-
-    for(int i = first; i < last; i++)
+    for(int i = text.numLines; i < command.end; i++)
         printf(".\n");
 }
 
@@ -331,7 +314,7 @@ char **readText(t_text text, int start, int end)
     // read lines
     while(lineNumber < end)
     {
-        data[readLineNumber] = curr->line;
+        data[readLineNumber] = curr;
         lineNumber++;
         readLineNumber++;
         curr = curr->next;
@@ -426,7 +409,7 @@ void printLine(char* line) {
 // ----- MAIN -----
 
 int main() {
-    t_text text = createText();
+    t_text text;
     t_history history = createHistory();
     t_command command;
 
@@ -438,22 +421,13 @@ int main() {
     */
 
     command = readCommand();
-    #ifdef DEBUG
-        printf("Command type: %c\n", command.type);
-        printf("Command start: %d\n", command.start);
-        printf("Command end: %d\n", command.end);
-    #endif
     while(command.type != 'q')
     {
+        command = readCommand();
         executeCommand(&command, &text, &history);
         updateHistory(&history, &command);
 
         command = readCommand();
-        #ifdef DEBUG
-            printf("Command type: %c\n", command.type);
-            printf("Command start: %d\n", command.start);
-            printf("Command end: %d\n", command.end);
-        #endif
     }
 
     return 0;
