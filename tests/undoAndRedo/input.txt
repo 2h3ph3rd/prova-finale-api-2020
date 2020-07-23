@@ -2,6 +2,7 @@
 Prima riga
 Seconda riga
 Terza riga
+.
 1u
 1,1p
 q

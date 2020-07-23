@@ -27,7 +27,13 @@ int main()
 		"/publicTests/bulkreads1",
 		"/publicTests/bulkreads2",
 		"/publicTests/timeforachange1",
-		"/publicTests/timeforachange2"
+		"/publicTests/timeforachange2",
+		"/publicTests/rollingback1",
+		"/publicTests/rollingback2",
+		"/publicTests/rollercoaster1",
+		"/publicTests/rollercoaster2",
+		"/publicTests/alterninghistory1",
+		"/publicTests/alterninghistory2"
     };
 
 	int i = 0;
