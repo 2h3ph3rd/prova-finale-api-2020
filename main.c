@@ -56,6 +56,7 @@ void forgetFuture(t_history *);
 void addNewEventToHistory(t_history *, t_command *);
 void backToTheFuture(t_history *history, t_text *text);
 void backToThePast(t_history *history, t_text *text);
+void revertChange(t_command *command, t_text *text);
 
 // text manager
 t_text createText();
@@ -400,11 +401,7 @@ void backToThePast(t_history *history, t_text *text)
     // change command to redo
     if(command -> type == 'c')
     {
-        strApp = command -> prevData;
-        deleteCommand(command, text);
-        writeTextInMiddle(text, strApp, command -> start, command -> end);
-        command -> prevData = command -> data;
-        command -> data = strApp;
+        revertChange(command, text);
     }
     // delete command to redo
     else if(command -> type == 'd')
@@ -432,12 +429,12 @@ void backToThePast(t_history *history, t_text *text)
     history -> futureCommands = command;
     // set command as head for the second commands stack
     history -> pastCommands = app;
+    return;
 }
 
 void backToTheFuture(t_history *history, t_text *text)
 {
     t_command *command, *app;
-    char **strApp;
 
     // no commands to do
     if(history -> futureCommands == NULL)
@@ -447,11 +444,7 @@ void backToTheFuture(t_history *history, t_text *text)
     // change command to redo
     if(command -> type == 'c')
     {
-        strApp = command -> prevData;
-        deleteCommand(command, text);
-        writeTextInMiddle(text, strApp, command -> start, command -> end);
-        command -> prevData = command -> data;
-        command -> data = strApp;
+        revertChange(command, text);
     }
     // delete command to redo
     else if(command -> type == 'd')
@@ -478,6 +471,27 @@ void backToTheFuture(t_history *history, t_text *text)
     history -> pastCommands = command;
     // set command as head for the second commands stack
     history -> futureCommands = app;
+    return;
+}
+
+void revertChange(t_command *command, t_text *text)
+{
+    char **strApp;
+
+    // avoid editing of prevData pointer
+    strApp = command -> prevData;
+    // remove new data
+    deleteCommand(command, text);
+    // restore prev data
+    if(strApp != NULL)
+    {
+        writeTextInMiddle(text, strApp, command -> start, command -> end);
+    }
+
+    // swap
+    command -> prevData = command -> data;
+    command -> data = strApp;
+    return;
 }
 
 
@@ -495,6 +509,10 @@ char **readText(t_text *text, int start, int end)
 {
     char **data;
     int numLinesToRead = end - start + 1;
+
+    // check if start not exceed numLines, otherwise no data to read
+    if(start > text -> numLines)
+        return NULL;
 
     // check if end not exceed numLines, otherwise end must be decrease to it
     if(end > text -> numLines)
@@ -589,7 +607,7 @@ void deleteTextLines(t_text *text, int start, int end)
 
 void writeTextInMiddle(t_text *text, char **data, int start, int end)
 {
-    int numLinesToAdd = start - end + 1;
+    int numLinesToAdd = end - start + 1;
     int newLastLine = numLinesToAdd + text -> numLines;
     int numLinesToMove = text -> numLines - start + 1;
     int numTextBuffersAllocated;
@@ -603,10 +621,6 @@ void writeTextInMiddle(t_text *text, char **data, int start, int end)
     */
 
     // 1. check data
-    // start cannot be greater than text num lines
-    if(start > text -> numLines + 1)
-        return;
-
     // cannot delete a num lines lower or equal than 0
     if(numLinesToAdd <= 0)
         return;
@@ -638,6 +652,7 @@ void writeTextInMiddle(t_text *text, char **data, int start, int end)
 
     // 4. save new num lines
     text -> numLines = newLastLine;
+    return;
 }
 
 

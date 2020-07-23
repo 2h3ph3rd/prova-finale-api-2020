@@ -109,7 +109,7 @@
 .
 .
 8. A programming language is low level when its programs require attention to the irrelevant.
-117. It goes against the grain of modern education to teach children to program. What fun is there in making plans, acquiring discipline in organizing  thoughts,  devoting attention to detail and learning to be self-critical?
+8. A programming language is low level when its programs require attention to the irrelevant.
 .
 .
 .
@@ -118,6 +118,8 @@
 .
 .
 .
+21. Optimization hinders evolution.
+8. A programming language is low level when its programs require attention to the irrelevant.
 .
 .
 .
@@ -126,6 +128,8 @@
 .
 .
 .
+9. It is better to have 100 functions operate on one data structure than 10 functions on 10 data structures.
+10. Get into a rut early: Do the same process the same way. Accumulate idioms. Standardize. The only difference(!) between Shakespeare and you was the size of his idiom list - not the size of his vocabulary.
 .
 .
 .
@@ -134,12 +138,8 @@
 .
 .
 .
-.
-.
-.
-.
-.
-.
+9. It is better to have 100 functions operate on one data structure than 10 functions on 10 data structures.
+10. Get into a rut early: Do the same process the same way. Accumulate idioms. Standardize. The only difference(!) between Shakespeare and you was the size of his idiom list - not the size of his vocabulary.
 .
 .
 .

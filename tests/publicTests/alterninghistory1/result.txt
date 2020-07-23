@@ -79,8 +79,8 @@
 .
 .
 92. The computer is the ultimate polluter: its feces are indistinguishable from the food it produces.
-.
-.
+88. It is not the computer's fault that Maxwell's equations are not adequate to design the electric motor.
+88. It is not the computer's fault that Maxwell's equations are not adequate to design the electric motor.
 .
 .
 .
@@ -89,7 +89,7 @@
 .
 .
 108. Whenever two programmers meet to criticize their programs, both are silent.
-.
+88. It is not the computer's fault that Maxwell's equations are not adequate to design the electric motor.
 .
 .
 .

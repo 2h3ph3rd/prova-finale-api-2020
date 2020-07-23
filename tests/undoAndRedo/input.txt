@@ -5,4 +5,7 @@ Terza riga
 .
 1u
 1,1p
+1r
+1,1d
+1,3p
 q
