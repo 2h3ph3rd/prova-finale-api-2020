@@ -273,8 +273,8 @@ void deleteCommand(t_command *command, t_text *text)
     {
         command -> start = 1;
     }
-    // start or end cannot be greater than last line
-    if(command -> start > text -> numLines || command -> end > text -> numLines)
+    // start cannot be greater than last line
+    if(command -> start > text -> numLines)
         return;
 
     command -> prevData = readText(text, command -> start, command -> end);
