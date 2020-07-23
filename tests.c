@@ -4,23 +4,26 @@
 
 #define BASE_TESTS_FOLDER "./tests"
 #define BUILD_FILE "./main.out"
+#define MAX_STRING_SIZE 1024
 
 int main()
 {
-	char *command;
+	char command[MAX_STRING_SIZE];
 
-	char path[100];
-	char outputPath[100];
-	char inputPath[100];
-	char resultPath[100];
+	char path[MAX_STRING_SIZE];
+	char outputPath[MAX_STRING_SIZE];
+	char inputPath[MAX_STRING_SIZE];
+	char resultPath[MAX_STRING_SIZE];
 
-    char *folders[100] = {
+    char *folders[MAX_STRING_SIZE] = {
 		"/onlyQuit",
         "/changeAndPrint",
 		"/multipleChangeAndPrint",
 		"/prof",
 		"/publicTests/writeonly1",
-		"/publicTests/writeonly2"
+		"/publicTests/writeonly2",
+		"/publicTests/bulkreads1",
+		"/publicTests/bulkreads2"
     };
 
 	int i = 0;
