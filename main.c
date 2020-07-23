@@ -243,7 +243,7 @@ void printCommand(t_command command, t_text *text)
         }
 
         for(int i = 0; i < numTextLinesToPrint; i++)
-            printf("%s\n", text -> lines[i + command.start]);
+            printf("%s\n", text -> lines[i + command.start - 1]);
 
         for(int i = text -> numLines; i < command.end; i++)
             printf(".\n");
@@ -346,7 +346,7 @@ char **readText(t_text *text, int start, int end)
     // read lines
     for(int i = 0; i < numLinesToRead; i++)
     {
-        data[i] = text -> lines[start + i];
+        data[i] = text -> lines[start + i - 1];
     }
 
     return data;
@@ -356,6 +356,7 @@ int writeText(t_text *text, char **data, int start, int end)
 {
     int numLinesToWrite = end - start + 1;
     int numCurrLine = 0;
+    int numTextBuffersAllocated = text -> numLines % TEXT_BUFFER_SIZE + 1;
 
     // cannot write out of text or zero lines
     if(start > text -> numLines + 1 || numLinesToWrite == 0)
@@ -369,26 +370,26 @@ int writeText(t_text *text, char **data, int start, int end)
         {
             text -> numLines++;
             // check if exceed allocated memory, otherwise realloc
-            if((numCurrLine % TEXT_BUFFER_SIZE) > (text -> numLines % TEXT_BUFFER_SIZE + 1))
+            if((numCurrLine % TEXT_BUFFER_SIZE) > numTextBuffersAllocated)
             {
-                text -> lines = realloc(text -> lines, sizeof(char *) * (numCurrLine % TEXT_BUFFER_SIZE));
+                numTextBuffersAllocated++;
+                text -> lines = realloc(text -> lines, sizeof(char *) * numTextBuffersAllocated * TEXT_BUFFER_SIZE);
             }
         }
-        text -> lines[numCurrLine] = data[i];
+        text -> lines[numCurrLine - 1] = data[i];
     }
     return text -> numLines;
 }
 
 int deleteTextLines(t_text *text, int start, int end)
 {
+    int numLinesToOverwrite = text -> numLines - end;
     int numLinesToDelete = end - start + 1;
-    int numCurrLine = 0;
-    int numNewLastLine;
 
     /*
         Process:
         1. check data
-        2. delete lines
+        2. overwrite lines
         3. return new num lines
     */
 
@@ -406,13 +407,15 @@ int deleteTextLines(t_text *text, int start, int end)
     if(end > text -> numLines)
         return text -> numLines - numLinesToDelete;
 
-    // 2. delete data
-    // find num of new last line
-    numNewLastLine = text -> numLines - end + 1;
-    for(int i = start; i < numNewLastLine; i++)
+    // start cannot be less or equal than 0
+    if(start <= 0)
+        start = 1;
+
+    // 2. overwrite lines
+    for(int i = 0; i < numLinesToOverwrite; i++)
     {
-        // overwrite lines
-        text -> lines[i] = text -> lines[end + i];
+        // overwrite lines from start to end
+        text -> lines[start + i - 1] = text -> lines[end + i];
     }
 
     // 3. return new num lines
