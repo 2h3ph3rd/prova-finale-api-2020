@@ -300,7 +300,7 @@ void undoCommand(t_command *command, t_text *text, t_history *history)
         // no others commands to undo, so exit
         if(history -> pastCommands == NULL)
         {
-            break;
+            return;
         }
         backToThePast(history, text);
     }
@@ -389,7 +389,7 @@ void addNewEventToHistory(t_history *history, t_command *command)
 
 void backToThePast(t_history *history, t_text *text)
 {
-    t_command *command;
+    t_command *command, *app;
     char **strApp;
 
     // no commands to do
@@ -409,7 +409,8 @@ void backToThePast(t_history *history, t_text *text)
     // delete command to redo
     else if(command -> type == 'd')
     {
-        writeTextInMiddle(text, command -> prevData, command -> start, command -> end);
+        if(command -> prevData != NULL)
+            writeTextInMiddle(text, command -> prevData, command -> start, command -> end);
     }
     else
     {
@@ -419,6 +420,7 @@ void backToThePast(t_history *history, t_text *text)
     }
 
     // command go to other stack, so set next as head of commands stack
+    app = history -> pastCommands -> next;
     if(history -> futureCommands == NULL)
     {
         command -> next = NULL;
@@ -429,12 +431,12 @@ void backToThePast(t_history *history, t_text *text)
     }
     history -> futureCommands = command;
     // set command as head for the second commands stack
-    history -> pastCommands = history -> pastCommands -> next;
+    history -> pastCommands = app;
 }
 
 void backToTheFuture(t_history *history, t_text *text)
 {
-    t_command *command;
+    t_command *command, *app;
     char **strApp;
 
     // no commands to do
@@ -464,6 +466,7 @@ void backToTheFuture(t_history *history, t_text *text)
     }
 
     // command go to other stack, so set next as head of commands stack
+    app = history -> futureCommands -> next;
     if(history -> pastCommands == NULL)
     {
         command -> next = NULL;
@@ -474,7 +477,7 @@ void backToTheFuture(t_history *history, t_text *text)
     }
     history -> pastCommands = command;
     // set command as head for the second commands stack
-    history -> futureCommands = history -> futureCommands -> next;
+    history -> futureCommands = app;
 }
 
 
@@ -487,6 +490,7 @@ t_text createText()
     text.lines = malloc(sizeof(char *) * TEXT_BUFFER_SIZE);
     return text;
 }
+
 char **readText(t_text *text, int start, int end)
 {
     char **data;
@@ -639,13 +643,15 @@ void writeTextInMiddle(t_text *text, char **data, int start, int end)
 
 // ----- UTILITIES FUNCTIONS -----
 
-int stringSize(char* string) {
+int stringSize(char* string)
+{
     int count = 0;
     while(string[count] != '\0') count++;
     return count;
 }
 
-char* readLine() {
+char* readLine()
+{
     int i;
     char c;
     char *line = malloc(sizeof(char) * (MAX_LINE_LENGTH + 1));
@@ -667,7 +673,8 @@ char* readLine() {
     return line;
 }
 
-void printLine(char* line) {
+void printLine(char* line)
+{
     int i = 0;
     while(line[i] != '\0') {
         putchar(line[i]);
@@ -678,7 +685,8 @@ void printLine(char* line) {
 
 // ----- MAIN -----
 
-int main() {
+int main()
+{
     t_text text = createText();
     t_history history = createHistory();
     t_command *command;
