@@ -26,8 +26,8 @@ typedef struct text {
 
 typedef struct history {
     // stack
-    t_command **pastCommands;
-    t_command **futureCommands;
+    t_command *pastCommands;
+    t_command *futureCommands;
     t_boolean timeTravelMode;
 } t_history;
 
@@ -50,10 +50,10 @@ void redoCommand(t_command, t_text *, t_history *);
 
 // update history
 t_history createHistory();
-t_history updateHistory(t_history *, t_command *);
-t_history checkTimeTravelMode(t_history, t_command);
-t_history forgetFuture(t_history);
-t_history addCommandToHistory(t_history, t_command);
+void updateHistory(t_history *, t_command *);
+void updateTimeTravelMode(t_history *, t_command *);
+void forgetFuture(t_history *);
+void addNewEventToHistory(t_history *, t_command *);
 
 // text manager
 t_text createText();
@@ -298,27 +298,59 @@ t_history createHistory()
 {
     t_history history;
     history.timeTravelMode = 0;
+    history.futureCommands = NULL;
+    history.pastCommands = NULL;
     return history;
 }
 
-t_history updateHistory(t_history *history, t_command *command)
+void updateHistory(t_history *history, t_command *command)
 {
-    return *history;
+    updateTimeTravelMode(history, command);
+    addNewEventToHistory(history, command);
+    return;
 }
 
-t_history checkTimeTravelMode(t_history history, t_command command)
+void updateTimeTravelMode(t_history *history, t_command *command)
 {
-    return history;
+    // only when true check if future is change
+    // than you cannot turn back to your dimension
+    if(history -> timeTravelMode == true)
+    {
+        // only while doing undo and redo you can return in the future
+        if(command -> type != 'u' && command -> type != 'r')
+        {
+            history -> timeTravelMode = false;
+            forgetFuture(history);
+        }
+    }
+    return;
 }
 
-t_history forgetFuture(t_history history)
+void forgetFuture(t_history *history)
 {
-    return history;
+    t_command *command, *app;
+    command = history -> futureCommands;
+    while(command != NULL)
+    {
+        app = command;
+        command = command -> next;
+        free(app);
+    }
+    history -> futureCommands = NULL;
+    return;
 }
 
-t_history addCommandToHistory(t_history history, t_command command)
+void addNewEventToHistory(t_history *history, t_command *command)
 {
-    return history;
+    t_command *newHead;
+    // only change and delete commands should be saved
+    if(command -> type == 'c' || command -> type == 'd')
+    {
+        newHead = command;
+        newHead -> next = history -> pastCommands;
+        history -> pastCommands = newHead;
+    }
+    return;
 }
 
 // ----- TEXT MANAGER -----
