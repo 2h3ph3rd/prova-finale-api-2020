@@ -4,15 +4,11 @@
 // #define DEBUG
 #define MAX_LINE_LENGTH 1024
 #define HISTORY_BUFFER_SIZE 100
+#define TEXT_BUFFER_SIZE 1024
 
 // ----- TYPES -----
 
 typedef enum boolean { false, true } t_boolean;
-
-typedef struct lines {
-    char *line;
-    struct lines *next;
-} t_line;
 
 typedef struct command {
     char type;
@@ -24,7 +20,7 @@ typedef struct command {
 } t_command;
 
 typedef struct text {
-    t_line *lines;
+    char **lines;
     int numLines;
 } t_text;
 
@@ -298,88 +294,56 @@ t_text createText()
 {
     t_text text;
     text.numLines = 0;
-    text.lines = malloc(sizeof(t_line));
+    text.lines = malloc(sizeof(char *) * TEXT_BUFFER_SIZE);
     return text;
 }
 char **readText(t_text text, int start, int end)
 {
-    t_line *curr;
     char **data;
-    int lineNumber = 0;
-    int readLineNumber = 0;
-
-    // allocate an array of strings
-    // 1,3c -> 3 - 1 + 1 = 3 lines to write
-    data = malloc(sizeof(char *) * (end - start + 1));
+    int numLinesToRead = end - start + 1;
 
     // check if end not exceed numLines, otherwise end must be decrease to it
     if(end > text.numLines)
         end = text.numLines;
 
-    // read first element
-    curr = text.lines;
-    lineNumber = 1;
+    // allocate an array of strings
+    // 1,3c -> 3 - 1 + 1 = 3 lines to write
+    data = malloc(sizeof(char *) * numLinesToRead);
 
-    // move to start
-    while(lineNumber < start)
-    {
-        curr = curr->next;
-        lineNumber++;
-    }
     // read lines
-    while(lineNumber < end + 1)
+    for(int i = 0; i < numLinesToRead; i++)
     {
-        data[readLineNumber] = curr->line;
-        lineNumber++;
-        readLineNumber++;
-        curr = curr->next;
+        data[i] = text.lines[start + i];
     }
+
     return data;
 }
 
-int writeText(t_text *text, char **newData, int start, int end)
+int writeText(t_text *text, char **data, int start, int end)
 {
-    t_line *curr;
-    int lineNumber = 0;
-    int writeLineNumber = 0;
-    int newLines = 0;
+    int numLinesToWrite = end - start + 1;
+    int numCurrLine = 0;
 
     // cannot write out of text or zero lines
     if(start > text -> numLines + 1)
         return text -> numLines;
 
-    // read first element
-    curr = text->lines;
-    lineNumber = 1;
-
-    // move to start
-    while(lineNumber < start && lineNumber <= text -> numLines)
+    // read lines
+    for(int i = 0; i < numLinesToWrite; i++)
     {
-        curr = curr->next;
-        lineNumber++;
-    }
-    // write lines
-    while(lineNumber < end + 1)
-    {
-        if(lineNumber > text -> numLines)
+        numCurrLine = start + i;
+        if(numCurrLine > text -> numLines)
         {
-            newLines++;
-            curr -> next = malloc(sizeof(t_line));
-            if(lineNumber == 1)
+            text -> numLines++;
+            // check if exceed allocated memory, otherwise realloc
+            if((numCurrLine % TEXT_BUFFER_SIZE) > (text -> numLines % TEXT_BUFFER_SIZE + 1))
             {
-                text -> lines = curr;
+                text -> lines = realloc(text -> lines, sizeof(char *) * (numCurrLine % TEXT_BUFFER_SIZE));
             }
         }
-        else
-        {
-            free(curr -> line);
-        }
-        curr -> line = newData[writeLineNumber];
-        lineNumber++;
-        writeLineNumber++;
-        curr = curr -> next;
+        text -> lines[numCurrLine] = data[i];
     }
-    return text -> numLines + newLines;
+    return text -> numLines;
 }
 
 // ----- UTILITIES FUNCTIONS -----
@@ -393,7 +357,7 @@ int stringSize(char* string) {
 char* readLine() {
     int i = 0;
     char c;
-    char *buffer = malloc(sizeof(char) * MAX_LINE_LENGTH + 1);
+    char *buffer = malloc(sizeof(char) * (MAX_LINE_LENGTH + 1));
     int numRealloc = 0;
 
     c = getchar();
