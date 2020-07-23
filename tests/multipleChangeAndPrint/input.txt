@@ -14,4 +14,16 @@ Riga 4
 Test singola modifica
 .
 2,2p
+0,0p
+1,5p
+8,8p
+4,5c
+Riga 4
+Riga 5
+.
+4,5p
+0,1c
+Riga 1 modifica
+.
+1,1p
 q

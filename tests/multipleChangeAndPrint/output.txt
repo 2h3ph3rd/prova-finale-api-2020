@@ -6,3 +6,13 @@ Nuova riga 2
 Nuova riga 3
 Riga 4
 Test singola modifica
+.
+Riga 1
+Test singola modifica
+Nuova riga 3
+Riga 4
+.
+.
+Riga 4
+Riga 5
+Riga 1 modifica
