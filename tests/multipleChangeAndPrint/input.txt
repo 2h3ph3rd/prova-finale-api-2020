@@ -10,4 +10,8 @@ Nuova riga 3
 Riga 4
 .
 1,4p
+2,2c
+Test singola modifica
+.
+2,2p
 q
