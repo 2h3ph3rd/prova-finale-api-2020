@@ -42,7 +42,7 @@ char** readCommandData(t_command);
 
 // execute command
 void executeCommand(t_command *, t_text *, t_history *);
-void printCommand(t_command, t_text);
+void printCommand(t_command, t_text *);
 void changeCommand(t_command *, t_text *);
 void deleteCommand(t_command *, t_text *);
 void undoCommand(t_command, t_text *, t_history *);
@@ -57,7 +57,7 @@ t_history addCommandToHistory(t_history, t_command);
 
 // text manager
 t_text createText();
-char **readText(t_text, int, int);
+char **readText(t_text *, int, int);
 int writeText(t_text *, char **, int, int);
 
 // utilities
@@ -87,6 +87,12 @@ t_command readCommand()
     // 3. Read data
     if(command.type == 'c')
         command.data = readCommandData(command);
+    else
+        command.data = NULL;
+    // clear read line
+    free(line);
+    // initialize prevData
+    command.prevData = NULL;
     return command;
 }
 
@@ -101,6 +107,10 @@ char **readCommandData(t_command command)
     int numLines;
     char *line;
     char **data;
+    if(command.start <= 0)
+    {
+        command.start = 1;
+    }
     // num of lines is given by the difference between end and start
     numLines = command.end - command.start + 1;
     // allocate numLines strings
@@ -183,7 +193,7 @@ void executeCommand(t_command *command, t_text *text, t_history *history)
     switch(command -> type)
     {
         case 'p':
-            printCommand(*command, *text);
+            printCommand(*command, text);
         break;
         case 'c':
             changeCommand(command, text);
@@ -205,16 +215,16 @@ void executeCommand(t_command *command, t_text *text, t_history *history)
     }
 }
 
-void printCommand(t_command command, t_text text)
+void printCommand(t_command command, t_text *text)
 {
-    int textLines;
+    int numTextLinesToPrint = 0;
     if(command.start == 0)
     {
         printf(".\n");
         command.start++;
     }
     // check if start is in text
-    if(command.start > text.numLines)
+    if(command.start > text -> numLines)
     {
         for(int i = command.start; i < command.end + 1; i++)
             printf(".\n");
@@ -222,24 +232,35 @@ void printCommand(t_command command, t_text text)
     else
     {
         // check for overflow
-        if(command.end > text.numLines)
-            textLines = 0;
+        if(command.end > text -> numLines)
+        {
+            numTextLinesToPrint = text -> numLines - command.start + 1;
+        }
         else
-            textLines = command.end - command.start + 1;
+        {
+            numTextLinesToPrint = command.end - command.start + 1;
+        }
 
-        command.data = readText(text, command.start, command.end);
+        for(int i = 0; i < numTextLinesToPrint; i++)
+            printf("%s\n", text -> lines[i + command.start]);
 
-        for(int i = 0; i < textLines; i++)
-            printf("%s\n", command.data[i]);
-
-        for(int i = text.numLines; i < command.end; i++)
+        for(int i = text -> numLines; i < command.end; i++)
             printf(".\n");
     }
 }
 
 void changeCommand(t_command *command, t_text *text)
 {
-    command -> prevData = readText(*text, command -> start, command -> end);
+    // start cannot be equal or lower 0
+    if(command -> start <= 0)
+    {
+        command -> start = 1;
+    }
+    // start cannot be greater than last line + 1
+    if(command -> start > text -> numLines + 1)
+        return;
+
+    command -> prevData = readText(text, command -> start, command -> end);
     text -> numLines = writeText(text, command -> data, command -> start, command -> end);
     return;
 }
@@ -297,14 +318,14 @@ t_text createText()
     text.lines = malloc(sizeof(char *) * TEXT_BUFFER_SIZE);
     return text;
 }
-char **readText(t_text text, int start, int end)
+char **readText(t_text *text, int start, int end)
 {
     char **data;
     int numLinesToRead = end - start + 1;
 
     // check if end not exceed numLines, otherwise end must be decrease to it
-    if(end > text.numLines)
-        end = text.numLines;
+    if(end > text -> numLines)
+        end = text -> numLines;
 
     // allocate an array of strings
     // 1,3c -> 3 - 1 + 1 = 3 lines to write
@@ -313,7 +334,7 @@ char **readText(t_text text, int start, int end)
     // read lines
     for(int i = 0; i < numLinesToRead; i++)
     {
-        data[i] = text.lines[start + i];
+        data[i] = text -> lines[start + i];
     }
 
     return data;
@@ -355,22 +376,25 @@ int stringSize(char* string) {
 }
 
 char* readLine() {
-    int i = 0;
+    int i;
     char c;
-    char *buffer = malloc(sizeof(char) * (MAX_LINE_LENGTH + 1));
-    int numRealloc = 0;
+    char *line = malloc(sizeof(char) * (MAX_LINE_LENGTH + 1));
 
     c = getchar();
+    i = 0;
 
     while (c != '\n') {
-        buffer[i] = c;
+        line[i] = c;
         i++;
 
         c = getchar();
     }
-    buffer[i] = '\0';
+    line[i] = '\0';
+    i++;
 
-    return buffer;
+    line = realloc(line, sizeof(char) * i);
+
+    return line;
 }
 
 void printLine(char* line) {
@@ -402,6 +426,11 @@ int main() {
     {
         executeCommand(&command, &text, &history);
         updateHistory(&history, &command);
+
+        if(command.data != NULL)
+            free(command.data);
+        if(command.prevData != NULL)
+            free(command.prevData);
 
         command = readCommand();
         #ifdef DEBUG
