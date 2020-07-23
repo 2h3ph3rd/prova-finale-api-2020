@@ -59,6 +59,7 @@ t_history addCommandToHistory(t_history, t_command);
 t_text createText();
 char **readText(t_text *, int, int);
 int writeText(t_text *, char **, int, int);
+int deleteTextLines(t_text *, int, int);
 
 // utilities
 char* readLine();
@@ -267,6 +268,17 @@ void changeCommand(t_command *command, t_text *text)
 
 void deleteCommand(t_command *command, t_text *text)
 {
+    // start cannot be equal or lower 0
+    if(command -> start <= 0)
+    {
+        command -> start = 1;
+    }
+    // start or end cannot be greater than last line
+    if(command -> start > text -> numLines || command -> end > text -> numLines)
+        return;
+
+    command -> prevData = readText(text, command -> start, command -> end);
+    text -> numLines = deleteTextLines(text, command -> start, command -> end);
     return;
 }
 
@@ -346,7 +358,7 @@ int writeText(t_text *text, char **data, int start, int end)
     int numCurrLine = 0;
 
     // cannot write out of text or zero lines
-    if(start > text -> numLines + 1)
+    if(start > text -> numLines + 1 || numLinesToWrite == 0)
         return text -> numLines;
 
     // read lines
@@ -366,6 +378,47 @@ int writeText(t_text *text, char **data, int start, int end)
     }
     return text -> numLines;
 }
+
+int deleteTextLines(t_text *text, int start, int end)
+{
+    int numLinesToDelete = end - start + 1;
+    int numCurrLine = 0;
+    int numNewLastLine;
+
+    /*
+        Process:
+        1. check data
+        2. delete lines
+        3. return new num lines
+    */
+
+    // 1. check data
+    // start cannot be greater than text num lines
+    if(start > text -> numLines + 1)
+        return text -> numLines;
+
+    // cannot delete a num lines lower or equal than 0
+    if(numLinesToDelete <= 0)
+        return text -> numLines;
+
+    // if end is bigger or equal text num lines
+    // than simply decrease text num lines to overwrite them
+    if(end > text -> numLines)
+        return text -> numLines - numLinesToDelete;
+
+    // 2. delete data
+    // find num of new last line
+    numNewLastLine = text -> numLines - end + 1;
+    for(int i = start; i < numNewLastLine; i++)
+    {
+        // overwrite lines
+        text -> lines[i] = text -> lines[end + i];
+    }
+
+    // 3. return new num lines
+    return text -> numLines - numLinesToDelete;
+}
+
 
 // ----- UTILITIES FUNCTIONS -----
 
