@@ -20,6 +20,7 @@ int main()
         "/changeAndPrint",
 		"/multipleChangeAndPrint",
 		"/delete",
+		"/undoAndRedo",
 		"/prof",
 		"/publicTests/writeonly1",
 		"/publicTests/writeonly2",
