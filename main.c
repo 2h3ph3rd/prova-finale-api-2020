@@ -222,7 +222,7 @@ void printCommand(t_command command, t_text *text)
     if(command.start == 0)
     {
         printf(".\n");
-        command.start++;
+        command.start = 1;
     }
     // check if start is in text
     if(command.start > text -> numLines)
@@ -362,7 +362,7 @@ int writeText(t_text *text, char **data, int start, int end)
     if(start > text -> numLines + 1 || numLinesToWrite == 0)
         return text -> numLines;
 
-    // read lines
+    // write lines
     for(int i = 0; i < numLinesToWrite; i++)
     {
         numCurrLine = start + i;
@@ -404,8 +404,8 @@ int deleteTextLines(t_text *text, int start, int end)
 
     // if end is bigger or equal text num lines
     // than simply decrease text num lines to overwrite them
-    if(end > text -> numLines)
-        return text -> numLines - numLinesToDelete;
+    if(end >= text -> numLines)
+        return text -> numLines - (text -> numLines - start + 1);
 
     // start cannot be less or equal than 0
     if(start <= 0)
