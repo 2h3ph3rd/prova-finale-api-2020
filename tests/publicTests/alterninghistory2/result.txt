@@ -118,8 +118,8 @@
 .
 .
 .
-40. There are two ways to write error-free programs; only the third one works.
-81. In computing, turning the obvious into the useful is a living definition of the word "frustration".
+73. It is not a language's weakness but its strengths that control the gradient of its change: Alas, a language never escapes its embryonic sac.
+23. To understand a program you must become both the machine and the program.
 90. Computation has made the tree flower.
 90. Computation has made the tree flower.
 .
@@ -198,7 +198,8 @@
 .
 .
 .
-71. Documentation is like term insurance: It satisfies because almost no one who subscribes to it depends on its benefits.
+80. Prolonged contact with the computer turns mathematicians into clerks and vice versa.
+23. To understand a program you must become both the machine and the program.
 .
 .
 .
@@ -207,18 +208,17 @@
 .
 .
 .
-.
-60. In seeking the unattainable, simplicity only gets in the way.
 66. Making something variable is easy. Controlling duration of constancy is the trick.
-7. It is easier to write an incorrect program than understand a correct one.
-71. Documentation is like term insurance: It satisfies because almost no one who subscribes to it depends on its benefits.
+66. Making something variable is easy. Controlling duration of constancy is the trick.
 .
 .
 .
 .
 .
 .
-71. Documentation is like term insurance: It satisfies because almost no one who subscribes to it depends on its benefits.
+.
+.
+23. To understand a program you must become both the machine and the program.
 .
 .
 .
@@ -229,19 +229,19 @@
 .
 .
 different tribes (FORTRAN, LISP, ALGOL, SNOBOL, etc.) could use one that doesn't require them to carry a blackboard on their ponies.
-66. Making something variable is easy. Controlling duration of constancy is the trick.
-7. It is easier to write an incorrect program than understand a correct one.
-71. Documentation is like term insurance: It satisfies because almost no one who subscribes to it depends on its benefits.
+23. To understand a program you must become both the machine and the program.
+87. We have the mini and the micro computer. In what semantic niche would the pico computer fall?
+9. It is better to have 100 functions operate on one data structure than 10 functions on 10 data structures.
 .
 .
 .
 .
 .
 .
-61. In programming, as in everything else, to be in error is to be reborn.
-68. If we believe in data structures, we must believe in independent (hence simultaneous) processing. For why else would we collect items within a structure? Why do we tolerate languages that give us the one without the other?
-.
-.
+87. We have the mini and the micro computer. In what semantic niche would the pico computer fall?
+9. It is better to have 100 functions operate on one data structure than 10 functions on 10 data structures.
+87. We have the mini and the micro computer. In what semantic niche would the pico computer fall?
+9. It is better to have 100 functions operate on one data structure than 10 functions on 10 data structures.
 .
 .
 .

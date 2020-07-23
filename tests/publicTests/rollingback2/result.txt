@@ -128,8 +128,7 @@
 .
 .
 .
-9. It is better to have 100 functions operate on one data structure than 10 functions on 10 data structures.
-10. Get into a rut early: Do the same process the same way. Accumulate idioms. Standardize. The only difference(!) between Shakespeare and you was the size of his idiom list - not the size of his vocabulary.
+21. Optimization hinders evolution.
 .
 .
 .
@@ -138,8 +137,9 @@
 .
 .
 .
-9. It is better to have 100 functions operate on one data structure than 10 functions on 10 data structures.
-10. Get into a rut early: Do the same process the same way. Accumulate idioms. Standardize. The only difference(!) between Shakespeare and you was the size of his idiom list - not the size of his vocabulary.
+.
+21. Optimization hinders evolution.
+.
 .
 .
 .

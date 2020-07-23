@@ -16,6 +16,7 @@ typedef struct command {
     int end;
     char **data;
     char **prevData;
+    int prevDataLength;
     struct command *next;
 } t_command;
 
@@ -100,6 +101,7 @@ t_command *readCommand()
     free(line);
     // initialize prevData
     command -> prevData = NULL;
+    command -> prevDataLength = 0;
     return command;
 }
 
@@ -121,7 +123,7 @@ char **readCommandData(t_command command)
     // num of lines is given by the difference between end and start
     numLines = command.end - command.start + 1;
     // allocate numLines strings
-    data = malloc(sizeof(char *) * numLines);
+    data = malloc(sizeof(char *) * numLines + 1);
     // read lines
     for(int i = 0; i < numLines; i++)
     {
@@ -136,6 +138,7 @@ char **readCommandData(t_command command)
             printf("ERROR: change command not have a dot as last line\n");
         #endif
     }
+    data[numLines] = "";
     return data;
 }
 
@@ -301,7 +304,7 @@ void undoCommand(t_command *command, t_text *text, t_history *history)
         // no others commands to undo, so exit
         if(history -> pastCommands == NULL)
         {
-            return;
+            break;
         }
         backToThePast(history, text);
     }
@@ -319,7 +322,7 @@ void redoCommand(t_command *command, t_text *text, t_history *history)
         // no others commands to undo, so exit
         if(history -> futureCommands == NULL)
         {
-            return;
+            break;
         }
         backToTheFuture(history, text);
     }
@@ -424,7 +427,7 @@ void backToThePast(t_history *history, t_text *text)
     }
     else
     {
-        command -> next =  history -> futureCommands -> next;
+        command -> next =  history -> futureCommands;
     }
     history -> futureCommands = command;
     // set command as head for the second commands stack
@@ -466,7 +469,7 @@ void backToTheFuture(t_history *history, t_text *text)
     }
     else
     {
-        command -> next = history -> pastCommands -> next;
+        command -> next = history -> pastCommands;
     }
     history -> pastCommands = command;
     // set command as head for the second commands stack
@@ -520,13 +523,16 @@ char **readText(t_text *text, int start, int end)
 
     // allocate an array of strings
     // 1,3c -> 3 - 1 + 1 = 3 lines to write
-    data = malloc(sizeof(char *) * numLinesToRead);
+    data = malloc(sizeof(char *) * numLinesToRead + 1);
 
     // read lines
     for(int i = 0; i < numLinesToRead; i++)
     {
         data[i] = text -> lines[start + i - 1];
     }
+
+    // add an empty string used in undo to read data length
+    data[numLinesToRead] = "";
 
     return data;
 }
@@ -636,6 +642,13 @@ void writeTextInMiddle(t_text *text, char **data, int start, int end)
         text -> lines = realloc(text -> lines, sizeof(char *) * numTextBuffersAllocated * TEXT_BUFFER_SIZE);
     }
 
+    // read data length
+    numLinesToAdd = 0;
+    for(int i = 0; data[i] != ""; i++)
+    {
+        numLinesToAdd++;
+    }
+
     // 2. create space
     for(int i = 0; i < numLinesToMove; i++)
     {
@@ -646,8 +659,16 @@ void writeTextInMiddle(t_text *text, char **data, int start, int end)
     // 3. add lines
     for(int i = 0; i < numLinesToAdd; i++)
     {
-        // overwrite lines from start to new end
-        text -> lines[start + i - 1] = data[i];
+        if(data[i][0] == '\0')
+        {
+            newLastLine = newLastLine - (numLinesToAdd - i - 1);
+            break;
+        }
+        else
+        {
+            // overwrite lines from start to new end
+            text -> lines[start + i - 1] = data[i];
+        }
     }
 
     // 4. save new num lines
