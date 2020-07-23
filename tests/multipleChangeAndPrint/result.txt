@@ -16,3 +16,10 @@ Riga 4
 Riga 4
 Riga 5
 Riga 1 modifica
+.
+a
+b
+c
+.
+.
+.

@@ -26,4 +26,16 @@ Riga 5
 Riga 1 modifica
 .
 1,1p
+8,8c
+1
+.
+8,8p
+1,3c
+a
+b
+c
+.
+1,3p
+0,0p
+8,9p
 q
