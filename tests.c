@@ -19,11 +19,14 @@ int main()
 		"/onlyQuit",
         "/changeAndPrint",
 		"/multipleChangeAndPrint",
+		"/delete",
 		"/prof",
 		"/publicTests/writeonly1",
 		"/publicTests/writeonly2",
 		"/publicTests/bulkreads1",
-		"/publicTests/bulkreads2"
+		"/publicTests/bulkreads2",
+		"/publicTests/timeforachange1",
+		"/publicTests/timeforachange2"
     };
 
 	int i = 0;
