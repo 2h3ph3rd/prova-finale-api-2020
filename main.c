@@ -356,7 +356,7 @@ int writeText(t_text *text, char **data, int start, int end)
 {
     int numLinesToWrite = end - start + 1;
     int numCurrLine = 0;
-    int numTextBuffersAllocated = text -> numLines % TEXT_BUFFER_SIZE + 1;
+    int numTextBuffersAllocated = (text -> numLines / TEXT_BUFFER_SIZE) + 1;
 
     // cannot write out of text or zero lines
     if(start > text -> numLines + 1 || numLinesToWrite == 0)
@@ -370,7 +370,7 @@ int writeText(t_text *text, char **data, int start, int end)
         {
             text -> numLines++;
             // check if exceed allocated memory, otherwise realloc
-            if((numCurrLine % TEXT_BUFFER_SIZE) > numTextBuffersAllocated)
+            if((numCurrLine / TEXT_BUFFER_SIZE  + 1) > numTextBuffersAllocated)
             {
                 numTextBuffersAllocated++;
                 text -> lines = realloc(text -> lines, sizeof(char *) * numTextBuffersAllocated * TEXT_BUFFER_SIZE);
@@ -448,7 +448,7 @@ char* readLine() {
     line[i] = '\0';
     i++;
 
-    line = realloc(line, sizeof(char) * i);
+    line = realloc(line, sizeof(char) * (i + 1));
 
     return line;
 }
@@ -482,11 +482,6 @@ int main() {
     {
         executeCommand(&command, &text, &history);
         updateHistory(&history, &command);
-
-        if(command.data != NULL)
-            free(command.data);
-        if(command.prevData != NULL)
-            free(command.prevData);
 
         command = readCommand();
         #ifdef DEBUG
