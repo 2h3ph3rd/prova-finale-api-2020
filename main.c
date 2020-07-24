@@ -67,12 +67,14 @@ void revertChange(t_command *command, t_text *text);
 // text manager
 t_text createText();
 t_data readText(t_text *, int, int);
-int writeText(t_text *, t_data, int, int);
+void writeText(t_text *, t_data, int, int);
 void deleteTextLines(t_text *, int, int);
 void overwriteText(t_text *, t_data, int, int);
 void addTextInMiddle(t_text *, t_data, int, int);
 void checkAndReallocText(t_text *, int);
 void createSpaceInMiddleText(t_text *, int, int);
+t_boolean checkIfExceedBufferSize(int, int);
+char **allocateBiggerTextArea(t_text *, int);
 
 // utilities
 char* readLine();
@@ -297,7 +299,7 @@ void changeCommand(t_command *command, t_text *text)
         return;
 
     command -> prevData = readText(text, command -> start, command -> end);
-    text -> numLines = writeText(text, command -> data, command -> start, command -> end);
+    writeText(text, command -> data, command -> start, command -> end);
     return;
 }
 
@@ -573,33 +575,46 @@ t_data readText(t_text *text, int start, int end)
     return data;
 }
 
-int writeText(t_text *text, t_data data, int start, int end)
+void writeText(t_text *text, t_data data, int start, int end)
 {
-    int numLinesToWrite = end - start + 1;
-    int numCurrLine = 0;
-    int numTextBuffersAllocated = (text -> numLines / TEXT_BUFFER_SIZE) + 1;
+    int numLinesToWrite;
+    int numCurrLine;
 
     // cannot write out of text or zero lines
+    numLinesToWrite = end - start + 1;
     if(start > text -> numLines + 1 || numLinesToWrite == 0)
-        return text -> numLines;
+        return;
+
+    // check if this write will append new text
+    if(end > text -> numLines)
+    {
+        // check if exceed allocated memory, otherwise realloc
+        if(checkIfExceedBufferSize(text -> numLines, end))
+        {
+            // reallocate a new area with a more buffer size
+            text -> lines = allocateBiggerTextArea(text, end);
+        }
+        // update text num lines
+        text -> numLines = end;
+    }
 
     // write lines
     for(int i = 0; i < numLinesToWrite; i++)
     {
-        numCurrLine = start + i;
-        if(numCurrLine > text -> numLines)
-        {
-            text -> numLines++;
-            // check if exceed allocated memory, otherwise realloc
-            if((numCurrLine / TEXT_BUFFER_SIZE  + 1) > numTextBuffersAllocated)
-            {
-                numTextBuffersAllocated++;
-                text -> lines = realloc(text -> lines, sizeof(char *) * numTextBuffersAllocated * TEXT_BUFFER_SIZE);
-            }
-        }
-        text -> lines[numCurrLine - 1] = data.text[i];
+        numCurrLine = start + i - 1;
+        text -> lines[numCurrLine] = data.text[i];
     }
-    return text -> numLines;
+    return;
+}
+
+t_boolean checkIfExceedBufferSize(int currNumLines, int newNumLines)
+{
+    return (newNumLines / TEXT_BUFFER_SIZE) > (currNumLines / TEXT_BUFFER_SIZE + 1);
+}
+
+char **allocateBiggerTextArea(t_text *actualText, int newLastLine)
+{
+    return realloc(actualText -> lines, sizeof(char *) * (newLastLine / TEXT_BUFFER_SIZE + 1) * TEXT_BUFFER_SIZE);
 }
 
 void deleteTextLines(t_text *text, int start, int end)
