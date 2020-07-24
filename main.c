@@ -10,13 +10,17 @@
 
 typedef enum boolean { false, true } t_boolean;
 
+typedef struct data {
+    char **text;
+    int length;
+} t_data;
+
 typedef struct command {
     char type;
     int start;
     int end;
-    char **data;
-    char **prevData;
-    int prevDataLength;
+    t_data data;
+    t_data prevData;
     struct command *next;
 } t_command;
 
@@ -39,7 +43,8 @@ t_command* readCommand();
 int getCommandType(char *);
 int readCommandStart(t_command, char *);
 void readCommandStartAndEnd(t_command *, char *);
-char** readCommandData(t_command);
+t_data readCommandData(t_command);
+t_data getEmptyDataStruct();
 
 // execute command
 void executeCommand(t_command *, t_text *, t_history *);
@@ -61,10 +66,13 @@ void revertChange(t_command *command, t_text *text);
 
 // text manager
 t_text createText();
-char **readText(t_text *, int, int);
-int writeText(t_text *, char **, int, int);
+t_data readText(t_text *, int, int);
+int writeText(t_text *, t_data, int, int);
 void deleteTextLines(t_text *, int, int);
-void writeTextInMiddle(t_text *, char **, int, int);
+void overwriteText(t_text *, t_data, int, int);
+void addTextInMiddle(t_text *, t_data, int, int);
+void checkAndReallocText(t_text *, int);
+void createSpaceInMiddleText(t_text *, int, int);
 
 // utilities
 char* readLine();
@@ -96,12 +104,13 @@ t_command *readCommand()
     if(command -> type == 'c')
         command -> data = readCommandData(*command);
     else
-        command -> data = NULL;
+        command -> data = getEmptyDataStruct();
+
     // clear read line
     free(line);
     // initialize prevData
-    command -> prevData = NULL;
-    command -> prevDataLength = 0;
+    command -> prevData.text = NULL;
+    command -> prevData.length = 0;
     return command;
 }
 
@@ -111,34 +120,49 @@ int getCommandType(char *line)
     return line[stringSize(line) - 1];
 }
 
-char **readCommandData(t_command command)
+t_data getEmptyDataStruct()
+{
+    t_data data;
+    data.text = NULL;
+    data.length = 0;
+    return data;
+}
+
+t_data readCommandData(t_command command)
 {
     int numLines;
     char *line;
-    char **data;
+    t_data data;
+
+    // start cannot be under 0
     if(command.start <= 0)
     {
         command.start = 1;
     }
+
     // num of lines is given by the difference between end and start
     numLines = command.end - command.start + 1;
+
     // allocate numLines strings
-    data = malloc(sizeof(char *) * numLines + 1);
+    data.text = malloc(sizeof(char *) * numLines + 1);
     // read lines
     for(int i = 0; i < numLines; i++)
     {
         line = readLine();
-        data[i] = line;
+        data.text[i] = line;
     }
+
     // read last line with dot
     line = readLine();
+
+    // save data length
+    data.length = numLines;
+    #ifdef DEBUG
     if(line[0] != '.')
     {
-        #ifdef DEBUG
-            printf("ERROR: change command not have a dot as last line\n");
-        #endif
+        printf("ERROR: change command not have a dot as last line\n");
     }
-    data[numLines] = "";
+    #endif
     return data;
 }
 
@@ -409,15 +433,15 @@ void backToThePast(t_history *history, t_text *text)
     // delete command to redo
     else if(command -> type == 'd')
     {
-        if(command -> prevData != NULL)
-            writeTextInMiddle(text, command -> prevData, command -> start, command -> end);
+        if(command -> prevData.text != NULL)
+            addTextInMiddle(text, command -> prevData, command -> start, command -> end);
     }
+    #ifdef DEBUG
     else
     {
-        #ifdef DEBUG
-            printf("ERROR: try to time travel with a bad command\n");
-        #endif
+        printf("ERROR: try to time travel with a bad command\n");
     }
+    #endif
 
     // command go to other stack, so set next as head of commands stack
     app = history -> pastCommands -> next;
@@ -479,21 +503,24 @@ void backToTheFuture(t_history *history, t_text *text)
 
 void revertChange(t_command *command, t_text *text)
 {
-    char **strApp;
+    t_data app;
 
     // avoid editing of prevData pointer
-    strApp = command -> prevData;
-    // remove new data
-    deleteCommand(command, text);
+    app = command -> prevData;
     // restore prev data
-    if(strApp != NULL)
+    if(app.text == NULL)
     {
-        writeTextInMiddle(text, strApp, command -> start, command -> end);
+        free(text -> lines);
+        *text = createText();
+    }
+    else
+    {
+        overwriteText(text, app, command -> start, command -> end);
     }
 
     // swap
     command -> prevData = command -> data;
-    command -> data = strApp;
+    command -> data = app;
     return;
 }
 
@@ -508,14 +535,23 @@ t_text createText()
     return text;
 }
 
-char **readText(t_text *text, int start, int end)
+t_data readText(t_text *text, int start, int end)
 {
-    char **data;
-    int numLinesToRead = end - start + 1;
+    t_data data;
+    int numLinesToRead;
+
+    data.text = NULL;
+    data.length = 0;
+
+    // end cannot be greater then numLines
+    if(end > text -> numLines)
+        end = text -> numLines;
+
+    numLinesToRead = end - start + 1;
 
     // check if start not exceed numLines, otherwise no data to read
     if(start > text -> numLines)
-        return NULL;
+        return data;
 
     // check if end not exceed numLines, otherwise end must be decrease to it
     if(end > text -> numLines)
@@ -523,21 +559,21 @@ char **readText(t_text *text, int start, int end)
 
     // allocate an array of strings
     // 1,3c -> 3 - 1 + 1 = 3 lines to write
-    data = malloc(sizeof(char *) * numLinesToRead + 1);
+    data.text = malloc(sizeof(char *) * numLinesToRead);
 
     // read lines
     for(int i = 0; i < numLinesToRead; i++)
     {
-        data[i] = text -> lines[start + i - 1];
+        data.text[i] = text -> lines[start + i - 1];
     }
 
-    // add an empty string used in undo to read data length
-    data[numLinesToRead] = "";
+    // set text length
+    data.length = numLinesToRead;
 
     return data;
 }
 
-int writeText(t_text *text, char **data, int start, int end)
+int writeText(t_text *text, t_data data, int start, int end)
 {
     int numLinesToWrite = end - start + 1;
     int numCurrLine = 0;
@@ -561,7 +597,7 @@ int writeText(t_text *text, char **data, int start, int end)
                 text -> lines = realloc(text -> lines, sizeof(char *) * numTextBuffersAllocated * TEXT_BUFFER_SIZE);
             }
         }
-        text -> lines[numCurrLine - 1] = data[i];
+        text -> lines[numCurrLine - 1] = data.text[i];
     }
     return text -> numLines;
 }
@@ -610,11 +646,43 @@ void deleteTextLines(t_text *text, int start, int end)
     text -> numLines = text -> numLines - numLinesToDelete;
 }
 
-
-void writeTextInMiddle(t_text *text, char **data, int start, int end)
+void overwriteText(t_text *text, t_data data, int start, int end)
 {
-    int numLinesToAdd = end - start + 1;
-    int newLastLine = numLinesToAdd + text -> numLines;
+    int numLinesToOverwrite;
+    int numLinesOfChangeCommand = end - start + 1;
+    int newLastLine;
+    int oldTextNumLines;
+
+    numLinesToOverwrite = data.length;
+    oldTextNumLines = numLinesOfChangeCommand - numLinesToOverwrite;
+
+    newLastLine = text -> numLines - oldTextNumLines;
+
+    // check data
+    // cannot have a num lines lower or equal than 0
+    if(numLinesToOverwrite <= 0)
+        return;
+
+    // start cannot be less or equal than 0
+    if(start <= 0)
+        start = 1;
+
+    // add lines
+    for(int i = 0; i < numLinesToOverwrite; i++)
+    {
+        // overwrite lines from start to new end
+        text -> lines[start + i - 1] = data.text[i];
+    }
+
+    // save new num lines
+    text -> numLines = newLastLine;
+    return;
+}
+
+void addTextInMiddle(t_text *text, t_data data, int start, int end)
+{
+    int numLinesToAdd = data.length;
+    int newLastLine = text -> numLines + numLinesToAdd;
     int numLinesToMove = text -> numLines - start + 1;
     int numTextBuffersAllocated;
 
@@ -627,7 +695,7 @@ void writeTextInMiddle(t_text *text, char **data, int start, int end)
     */
 
     // 1. check data
-    // cannot delete a num lines lower or equal than 0
+    // cannot have a num lines lower or equal than 0
     if(numLinesToAdd <= 0)
         return;
 
@@ -635,40 +703,17 @@ void writeTextInMiddle(t_text *text, char **data, int start, int end)
     if(start <= 0)
         start = 1;
 
-    // check if exceed allocated memory, otherwise realloc
-    numTextBuffersAllocated = (text -> numLines / TEXT_BUFFER_SIZE) + 1;
-    if((newLastLine / TEXT_BUFFER_SIZE  + 1) > numTextBuffersAllocated)
-    {
-        text -> lines = realloc(text -> lines, sizeof(char *) * numTextBuffersAllocated * TEXT_BUFFER_SIZE);
-    }
-
-    // read data length
-    numLinesToAdd = 0;
-    for(int i = 0; data[i] != ""; i++)
-    {
-        numLinesToAdd++;
-    }
+    // check if exceed allocated memory, than realloc
+    checkAndReallocText(text, newLastLine);
 
     // 2. create space
-    for(int i = 0; i < numLinesToMove; i++)
-    {
-        // overwrite lines from start to new end
-        text -> lines[newLastLine - i - 1] = text -> lines[text -> numLines - i - 1];
-    }
+    createSpaceInMiddleText(text, numLinesToMove, newLastLine);
 
     // 3. add lines
-    for(int i = 0; i < numLinesToAdd; i++)
+    for(int i = 0; i < data.length; i++)
     {
-        if(data[i][0] == '\0')
-        {
-            newLastLine = newLastLine - (numLinesToAdd - i - 1);
-            break;
-        }
-        else
-        {
-            // overwrite lines from start to new end
-            text -> lines[start + i - 1] = data[i];
-        }
+        // overwrite lines from start to new end
+        text -> lines[start + i - 1] = data.text[i];
     }
 
     // 4. save new num lines
@@ -676,6 +721,26 @@ void writeTextInMiddle(t_text *text, char **data, int start, int end)
     return;
 }
 
+// checkAndReallocText: check if exceed allocated memory, than realloc
+void checkAndReallocText(t_text *text, int newLastLine)
+{
+    int numTextBuffersAllocated;
+    numTextBuffersAllocated = (text -> numLines / TEXT_BUFFER_SIZE) + 1;
+    if((newLastLine / TEXT_BUFFER_SIZE  + 1) > numTextBuffersAllocated)
+    {
+        text -> lines = realloc(text -> lines, sizeof(char *) * numTextBuffersAllocated * TEXT_BUFFER_SIZE);
+    }
+}
+
+// createSpaceInMiddleText: move text lines to create space
+void createSpaceInMiddleText(t_text *text, int numLinesToMove, int newLastLine)
+{
+    for(int i = 0; i < numLinesToMove; i++)
+    {
+        // overwrite lines from start to new end
+        text -> lines[newLastLine - i - 1] = text -> lines[text -> numLines - i - 1];
+    }
+}
 
 // ----- UTILITIES FUNCTIONS -----
 
