@@ -651,12 +651,21 @@ void overwriteText(t_text *text, t_data data, int start, int end)
     int numLinesToOverwrite;
     int numLinesOfChangeCommand = end - start + 1;
     int newLastLine;
-    int oldTextNumLines;
+    int numNewLinesAdded;
 
     numLinesToOverwrite = data.length;
-    oldTextNumLines = numLinesOfChangeCommand - numLinesToOverwrite;
+    numNewLinesAdded = (text->numLines - end + 1);
 
-    newLastLine = text -> numLines - oldTextNumLines;
+    if(end > text -> numLines)
+    {
+        numNewLinesAdded = end - text -> numLines;
+    }
+    else
+    {
+        numNewLinesAdded = 0;
+    }
+
+    newLastLine = text -> numLines + numNewLinesAdded;
 
     // check data
     // cannot have a num lines lower or equal than 0
