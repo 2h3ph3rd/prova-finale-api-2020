@@ -77,7 +77,6 @@ char **allocateBiggerTextArea(t_text *, int);
 void writeDataToText(t_text *, t_data, int);
 t_boolean isDataValidForWrite(t_text *, t_data, int);
 void shiftText(t_text *, int, int);
-void reallocTextHead(t_text *, int);
 
 // utilities
 char* readLine();
@@ -400,6 +399,8 @@ void forgetFuture(t_history *history)
     {
         app = command;
         command = command -> next;
+        free(app -> data.text);
+        free(app -> prevData.text);
         free(app);
     }
     history -> futureCommands = NULL;
@@ -515,7 +516,6 @@ void revertChange(t_command *command, t_text *text)
     // restore prev data
     if(app.text == NULL)
     {
-        free(text -> lines);
         *text = createText();
     }
     else
@@ -536,7 +536,7 @@ t_text createText()
 {
     t_text text;
     text.numLines = 0;
-    text.lines = malloc(sizeof(char *) * TEXT_BUFFER_SIZE);
+    text.lines = realloc(text.lines, sizeof(char *) * TEXT_BUFFER_SIZE);
     return text;
 }
 
@@ -602,49 +602,22 @@ void deleteTextLines(t_text *text, int start, int end)
     if(start <= 0)
         start = 1;
 
-    // overwrite lines
+    // shift lines
     shiftText(text, start, end);
 
-    // 3. save new num lines
+    // save new num lines
     text -> numLines = text -> numLines - numLinesToDelete;
 }
 
 void shiftText(t_text *text, int start, int end)
 {
     int numLinesToShift;
-    int middle = start + (end - start + 1) / 2;
-    // check where there are lower data, head or tail
-    if(middle < (text -> numLines / 2))
+    numLinesToShift = text -> numLines - end;
+    for(int i = 0; i < numLinesToShift; i++)
     {
-        numLinesToShift = start - 1;
-        for(int i = 0; i < numLinesToShift; i++)
-        {
-            // overwrite lines from start to end
-            text -> lines[end - i - 1] = text -> lines[i];
-        }
-        reallocTextHead(text, end - numLinesToShift);
+        // overwrite lines from start to end
+        text -> lines[start + i - 1] = text -> lines[end + i];
     }
-    else
-    {
-        numLinesToShift = text -> numLines - end;
-        for(int i = 0; i < numLinesToShift; i++)
-        {
-            // overwrite lines from start to end
-            text -> lines[start + i - 1] = text -> lines[end + i];
-        }
-    }
-}
-
-void reallocTextHead(t_text *text, int newHead)
-{
-    // free area no more used
-    for(int i = 0; i < newHead; i++)
-    {
-        free(text -> lines[i]);
-        free(&(text -> lines[i]));
-    }
-    // set new head
-    text -> lines = &(text -> lines[newHead]);
 }
 
 void writeText(t_text *text, t_data data, int start, int end)
