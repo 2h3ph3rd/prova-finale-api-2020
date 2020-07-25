@@ -32,8 +32,11 @@ typedef struct text {
 typedef struct history {
     // stack
     t_command *pastCommands;
+    int numPastCommands;
     t_command *futureCommands;
+    int numFutureCommands;
     t_boolean timeTravelMode;
+    int commandsToTravel;
 } t_history;
 
 // ----- PROTOTYPES -----
@@ -51,8 +54,8 @@ void executeCommand(t_command *, t_text *, t_history *);
 void printCommand(t_command, t_text *);
 void changeCommand(t_command *, t_text *);
 void deleteCommand(t_command *, t_text *);
-void undoCommand(t_command *, t_text *, t_history *);
-void redoCommand(t_command *, t_text *, t_history *);
+void undoCommand(t_text *, t_history *);
+void redoCommand(t_text *, t_history *);
 
 // update history
 t_history createHistory();
@@ -63,6 +66,7 @@ void addNewEventToHistory(t_history *, t_command *);
 void backToTheFuture(t_history *history, t_text *text);
 void backToThePast(t_history *history, t_text *text);
 void revertChange(t_command *command, t_text *text);
+void swipeEventStack(t_command *, t_command **, t_command **);
 
 // text manager
 t_text createText();
@@ -230,6 +234,18 @@ void readCommandStartAndEnd(t_command *command, char *line)
 
 void executeCommand(t_command *command, t_text *text, t_history *history)
 {
+    if(history -> timeTravelMode == true && command -> type != 'r' && command -> type != 'u')
+    {
+        if(history -> commandsToTravel < 0)
+        {
+            undoCommand(text, history);
+        }
+        else if (history -> commandsToTravel > 0)
+        {
+            redoCommand(text, history);
+        }
+        // otherwise nothing to do
+    }
     switch(command -> type)
     {
         case 'p':
@@ -242,10 +258,22 @@ void executeCommand(t_command *command, t_text *text, t_history *history)
             deleteCommand(command, text);
         break;
         case 'u':
-            undoCommand(command, text, history);
+            if(command -> start > history -> numPastCommands)
+            {
+                command -> start = history -> numPastCommands;
+            }
+            history -> commandsToTravel -= command -> start;
+            history -> numPastCommands -= command -> start;
+            history -> timeTravelMode = true;
         break;
         case 'r':
-            redoCommand(command, text, history);
+            if(command -> start > history -> numFutureCommands)
+            {
+                command -> start = history -> numFutureCommands;
+            }
+            history -> commandsToTravel += command -> start;
+            history -> numFutureCommands -= command -> start;
+            history -> timeTravelMode = true;
         break;
         #ifdef DEBUG
         default:
@@ -321,13 +349,17 @@ void deleteCommand(t_command *command, t_text *text)
     return;
 }
 
-void undoCommand(t_command *command, t_text *text, t_history *history)
+void undoCommand(t_text *text, t_history *history)
 {
     // cannot undo 0 or lower
-    if(command -> start <= 0)
+    if(history -> commandsToTravel >= 0)
         return;
+
+    // set as positive value
+    history -> commandsToTravel *= -1;
+
     // undo commands
-    for(int i = 0; i < command -> start; i++)
+    for(int i = 0; i < history -> commandsToTravel; i++)
     {
         // no others commands to undo, so exit
         if(history -> pastCommands == NULL)
@@ -336,16 +368,17 @@ void undoCommand(t_command *command, t_text *text, t_history *history)
         }
         backToThePast(history, text);
     }
+    history -> commandsToTravel = 0;
     return;
 }
 
-void redoCommand(t_command *command, t_text *text, t_history *history)
+void redoCommand(t_text *text, t_history *history)
 {
     // cannot undo 0 or lower
-    if(command -> start <= 0)
+    if(history -> commandsToTravel <= 0)
         return;
     // undo commands
-    for(int i = 0; i < command -> start; i++)
+    for(int i = 0; i < history -> commandsToTravel; i++)
     {
         // no others commands to undo, so exit
         if(history -> futureCommands == NULL)
@@ -354,6 +387,7 @@ void redoCommand(t_command *command, t_text *text, t_history *history)
         }
         backToTheFuture(history, text);
     }
+    history -> commandsToTravel = 0;
     return;
 }
 
@@ -362,9 +396,12 @@ void redoCommand(t_command *command, t_text *text, t_history *history)
 t_history createHistory()
 {
     t_history history;
-    history.timeTravelMode = 0;
+    history.commandsToTravel = 0;
+    history.timeTravelMode = false;
     history.futureCommands = NULL;
     history.pastCommands = NULL;
+    history.numPastCommands = 0;
+    history.numFutureCommands = 0;
     return history;
 }
 
@@ -404,6 +441,7 @@ void forgetFuture(t_history *history)
         free(app);
     }
     history -> futureCommands = NULL;
+    history -> numFutureCommands = 0;
     return;
 }
 
@@ -417,6 +455,7 @@ void addNewEventToHistory(t_history *history, t_command *command)
         newHead = command;
         newHead -> next = history -> pastCommands;
         history -> pastCommands = newHead;
+        history -> numPastCommands++;
     }
     return;
 }
@@ -449,19 +488,9 @@ void backToThePast(t_history *history, t_text *text)
     }
     #endif
 
-    // command go to other stack, so set next as head of commands stack
-    app = history -> pastCommands -> next;
-    if(history -> futureCommands == NULL)
-    {
-        command -> next = NULL;
-    }
-    else
-    {
-        command -> next =  history -> futureCommands;
-    }
-    history -> futureCommands = command;
-    // set command as head for the second commands stack
-    history -> pastCommands = app;
+    swipeEventStack(command, &history -> pastCommands, &history -> futureCommands);
+    history -> numPastCommands--;
+    history -> numFutureCommands++;
     return;
 }
 
@@ -491,19 +520,11 @@ void backToTheFuture(t_history *history, t_text *text)
         #endif
     }
 
-    // command go to other stack, so set next as head of commands stack
-    app = history -> futureCommands -> next;
-    if(history -> pastCommands == NULL)
-    {
-        command -> next = NULL;
-    }
-    else
-    {
-        command -> next = history -> pastCommands;
-    }
-    history -> pastCommands = command;
-    // set command as head for the second commands stack
-    history -> futureCommands = app;
+    // command go to other stack
+    swipeEventStack(command, &history -> futureCommands, &history -> pastCommands);
+
+    history -> numPastCommands--;
+    history -> numFutureCommands++;
     return;
 }
 
@@ -526,6 +547,25 @@ void revertChange(t_command *command, t_text *text)
     // swap
     command -> prevData = command -> data;
     command -> data = app;
+    return;
+}
+
+void swipeEventStack(t_command *command, t_command **old, t_command **new)
+{
+    t_command *app;
+    // command go to other stack, so set next as head of commands stack
+    app = command -> next;
+    if(*new == NULL)
+    {
+        command -> next = NULL;
+    }
+    else
+    {
+        command -> next =  *new;
+    }
+    *new = command;
+    // set command as head for the second commands stack
+    *old = app;
     return;
 }
 
