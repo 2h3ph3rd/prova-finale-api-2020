@@ -69,7 +69,6 @@ t_text createText();
 t_data readText(t_text *, int, int);
 void writeText(t_text *, t_data, int, int);
 void deleteTextLines(t_text *, int, int);
-void rewriteText(t_text *, t_data, int, int);
 void addTextInMiddle(t_text *, t_data, int, int);
 void checkAndReallocText(t_text *, int);
 void createSpaceInMiddleText(t_text *, int, int);
@@ -521,7 +520,7 @@ void revertChange(t_command *command, t_text *text)
     }
     else
     {
-        rewriteText(text, app, command -> start, command -> end);
+        writeText(text, app, command -> start, command -> end);
     }
 
     // swap
@@ -638,11 +637,13 @@ void shiftText(t_text *text, int start, int end)
 
 void reallocTextHead(t_text *text, int newHead)
 {
+    // free area no more used
     for(int i = 0; i < newHead; i++)
     {
         free(text -> lines[i]);
-        text -> lines[i] = NULL;
+        free(&(text -> lines[i]));
     }
+    // set new head
     text -> lines = &(text -> lines[newHead]);
 }
 
@@ -655,6 +656,10 @@ void writeText(t_text *text, t_data data, int start, int end)
     if(!isDataValidForWrite(text, data, start))
         return;
 
+    // start cannot be less or equal than 0
+    if(start <= 0)
+        start = 1;
+
     // check if this write will append new text
     if(end > text -> numLines)
     {
@@ -665,30 +670,6 @@ void writeText(t_text *text, t_data data, int start, int end)
     }
 
     // write lines
-    writeDataToText(text, data, start);
-
-    return;
-}
-
-void rewriteText(t_text *text, t_data data, int start, int end)
-{
-    // check data
-    if(!isDataValidForWrite(text, data, start))
-        return;
-
-    // check for new lines to add
-    // space is already checked for reallocation in write text
-    if(end > text -> numLines)
-    {
-        // save new num lines
-        text -> numLines =  text -> numLines + (end - text -> numLines);
-    }
-
-    // start cannot be less or equal than 0
-    if(start <= 0)
-        start = 1;
-
-    // add lines
     writeDataToText(text, data, start);
 
     return;
