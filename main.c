@@ -76,7 +76,8 @@ void createSpaceInMiddleText(t_text *, int, int);
 t_boolean checkIfExceedBufferSize(int, int);
 char **allocateBiggerTextArea(t_text *, int);
 void writeDataToText(t_text *, t_data, int);
-t_boolean isDataValidForWrite(t_text *text, t_data data, int start);
+t_boolean isDataValidForWrite(t_text *, t_data, int);
+void shiftText(t_text *, int, int);
 
 // utilities
 char* readLine();
@@ -579,12 +580,15 @@ t_data readText(t_text *text, int start, int end)
 
 void deleteTextLines(t_text *text, int start, int end)
 {
-    int numLinesToOverwrite = text -> numLines - end;
     int numLinesToDelete = end - start + 1;
 
-    // start cannot be less or equal than 0
-    if(start <= 0)
-        start = 1;
+    // start cannot be greater than text num lines
+    if(start > text -> numLines)
+        return;
+
+    // cannot delete a num lines lower or equal than 0
+    if(numLinesToDelete <= 0)
+        return;
 
     // if end is bigger or equal text num lines
     // than simply decrease text num lines to overwrite them
@@ -594,16 +598,40 @@ void deleteTextLines(t_text *text, int start, int end)
         return;
     }
 
+    // start cannot be less or equal than 0
+    if(start <= 0)
+        start = 1;
 
-    // 2. overwrite lines
-    for(int i = 0; i < numLinesToOverwrite; i++)
-    {
-        // overwrite lines from start to end
-        text -> lines[start + i - 1] = text -> lines[end + i];
-    }
+    // overwrite lines
+    shiftText(text, start, end);
 
     // 3. save new num lines
     text -> numLines = text -> numLines - numLinesToDelete;
+}
+
+void shiftText(t_text *text, int start, int end)
+{
+    int numLinesToShift;
+    int middle = start + (end - start + 1) / 2;
+    // check where there are lower data, head or tail
+    if(middle < (text -> numLines / 2))
+    {
+        numLinesToShift = start - 1;
+        for(int i = 0; i < numLinesToShift; i++)
+        {
+            // overwrite lines from start to end
+            text -> lines[end - i - 1] = text -> lines[i];
+        }
+    }
+    else
+    {
+        numLinesToShift = text -> numLines - end;
+        for(int i = 0; i < numLinesToShift; i++)
+        {
+            // overwrite lines from start to end
+            text -> lines[start + i - 1] = text -> lines[end + i];
+        }
+    }
 }
 
 void writeText(t_text *text, t_data data, int start, int end)
@@ -681,7 +709,6 @@ void addTextInMiddle(t_text *text, t_data data, int start, int end)
 
 t_boolean isDataValidForWrite(t_text *text, t_data data, int start)
 {
-    // 1. check data
     // start cannot be greater than text num lines
     if(start > text -> numLines + 1)
         return false;
