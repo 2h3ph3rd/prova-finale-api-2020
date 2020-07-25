@@ -63,6 +63,7 @@ void addNewEventToHistory(t_history *, t_command *);
 void backToTheFuture(t_history *history, t_text *text);
 void backToThePast(t_history *history, t_text *text);
 void revertChange(t_command *command, t_text *text);
+void writeDataToText(t_text *, t_data, int, int);
 
 // text manager
 t_text createText();
@@ -599,22 +600,8 @@ void writeText(t_text *text, t_data data, int start, int end)
     }
 
     // write lines
-    for(int i = 0; i < numLinesToWrite; i++)
-    {
-        numCurrLine = start + i - 1;
-        text -> lines[numCurrLine] = data.text[i];
-    }
+    writeDataToText(text, data, start, end);
     return;
-}
-
-t_boolean checkIfExceedBufferSize(int currNumLines, int newNumLines)
-{
-    return (newNumLines / TEXT_BUFFER_SIZE) > (currNumLines / TEXT_BUFFER_SIZE + 1);
-}
-
-char **allocateBiggerTextArea(t_text *actualText, int newLastLine)
-{
-    return realloc(actualText -> lines, sizeof(char *) * (newLastLine / TEXT_BUFFER_SIZE + 1) * TEXT_BUFFER_SIZE);
 }
 
 void deleteTextLines(t_text *text, int start, int end)
@@ -669,7 +656,6 @@ void overwriteText(t_text *text, t_data data, int start, int end)
     int numNewLinesAdded;
 
     numLinesToOverwrite = data.length;
-    numNewLinesAdded = (text->numLines - end + 1);
 
     if(end > text -> numLines)
     {
@@ -733,12 +719,8 @@ void addTextInMiddle(t_text *text, t_data data, int start, int end)
     // 2. create space
     createSpaceInMiddleText(text, numLinesToMove, newLastLine);
 
-    // 3. add lines
-    for(int i = 0; i < data.length; i++)
-    {
-        // overwrite lines from start to new end
-        text -> lines[start + i - 1] = data.text[i];
-    }
+    // 3. write lines
+    writeDataToText(text, data, start, end);
 
     // 4. save new num lines
     text -> numLines = newLastLine;
@@ -764,6 +746,27 @@ void createSpaceInMiddleText(t_text *text, int numLinesToMove, int newLastLine)
         // overwrite lines from start to new end
         text -> lines[newLastLine - i - 1] = text -> lines[text -> numLines - i - 1];
     }
+}
+
+void writeDataToText(t_text *text, t_data data, int start, int end)
+{
+    int numCurrLine;
+    for(int i = 0; i < data.length; i++)
+    {
+        numCurrLine = start + i - 1;
+        text -> lines[numCurrLine] = data.text[i];
+    }
+    return;
+}
+
+t_boolean checkIfExceedBufferSize(int currNumLines, int newNumLines)
+{
+    return (newNumLines / TEXT_BUFFER_SIZE) > (currNumLines / TEXT_BUFFER_SIZE + 1);
+}
+
+char **allocateBiggerTextArea(t_text *actualText, int newLastLine)
+{
+    return realloc(actualText -> lines, sizeof(char *) * (newLastLine / TEXT_BUFFER_SIZE + 1) * TEXT_BUFFER_SIZE);
 }
 
 // ----- UTILITIES FUNCTIONS -----
