@@ -697,9 +697,6 @@ void addTextInMiddle(t_text *text, t_data data, int start, int end)
     if(data.length <= 0)
         return;
 
-    // check if exceed allocated memory, than realloc
-    checkAndReallocText(text, newLastLine);
-
     // create space
     createSpaceInMiddleText(text, numLinesToMove, newLastLine);
 
