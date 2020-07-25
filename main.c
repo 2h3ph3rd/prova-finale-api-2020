@@ -63,19 +63,19 @@ void addNewEventToHistory(t_history *, t_command *);
 void backToTheFuture(t_history *history, t_text *text);
 void backToThePast(t_history *history, t_text *text);
 void revertChange(t_command *command, t_text *text);
-void writeDataToText(t_text *, t_data, int, int);
 
 // text manager
 t_text createText();
 t_data readText(t_text *, int, int);
 void writeText(t_text *, t_data, int, int);
 void deleteTextLines(t_text *, int, int);
-void overwriteText(t_text *, t_data, int, int);
+void rewriteText(t_text *, t_data, int, int);
 void addTextInMiddle(t_text *, t_data, int, int);
 void checkAndReallocText(t_text *, int);
 void createSpaceInMiddleText(t_text *, int, int);
 t_boolean checkIfExceedBufferSize(int, int);
 char **allocateBiggerTextArea(t_text *, int);
+void writeDataToText(t_text *, t_data, int);
 
 // utilities
 char* readLine();
@@ -518,7 +518,7 @@ void revertChange(t_command *command, t_text *text)
     }
     else
     {
-        overwriteText(text, app, command -> start, command -> end);
+        rewriteText(text, app, command -> start, command -> end);
     }
 
     // swap
@@ -600,7 +600,7 @@ void writeText(t_text *text, t_data data, int start, int end)
     }
 
     // write lines
-    writeDataToText(text, data, start, end);
+    writeDataToText(text, data, start);
     return;
 }
 
@@ -648,44 +648,28 @@ void deleteTextLines(t_text *text, int start, int end)
     text -> numLines = text -> numLines - numLinesToDelete;
 }
 
-void overwriteText(t_text *text, t_data data, int start, int end)
+void rewriteText(t_text *text, t_data data, int start, int end)
 {
-    int numLinesToOverwrite;
-    int numLinesOfChangeCommand = end - start + 1;
-    int newLastLine;
-    int numNewLinesAdded;
+    // check data
+    // cannot have a num lines to write lower or equal than 0
+    if(data.length <= 0)
+        return;
 
-    numLinesToOverwrite = data.length;
-
+    // check for new lines to add
+    // space is already checked for reallocation in write text
     if(end > text -> numLines)
     {
-        numNewLinesAdded = end - text -> numLines;
+        // save new num lines
+        text -> numLines =  text -> numLines + (end - text -> numLines);
     }
-    else
-    {
-        numNewLinesAdded = 0;
-    }
-
-    newLastLine = text -> numLines + numNewLinesAdded;
-
-    // check data
-    // cannot have a num lines lower or equal than 0
-    if(numLinesToOverwrite <= 0)
-        return;
 
     // start cannot be less or equal than 0
     if(start <= 0)
         start = 1;
 
     // add lines
-    for(int i = 0; i < numLinesToOverwrite; i++)
-    {
-        // overwrite lines from start to new end
-        text -> lines[start + i - 1] = data.text[i];
-    }
+    writeDataToText(text, data, start);
 
-    // save new num lines
-    text -> numLines = newLastLine;
     return;
 }
 
@@ -720,7 +704,7 @@ void addTextInMiddle(t_text *text, t_data data, int start, int end)
     createSpaceInMiddleText(text, numLinesToMove, newLastLine);
 
     // 3. write lines
-    writeDataToText(text, data, start, end);
+    writeDataToText(text, data, start);
 
     // 4. save new num lines
     text -> numLines = newLastLine;
@@ -748,7 +732,7 @@ void createSpaceInMiddleText(t_text *text, int numLinesToMove, int newLastLine)
     }
 }
 
-void writeDataToText(t_text *text, t_data data, int start, int end)
+void writeDataToText(t_text *text, t_data data, int start)
 {
     int numCurrLine;
     for(int i = 0; i < data.length; i++)
