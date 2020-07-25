@@ -13,6 +13,7 @@ typedef enum boolean { false, true } t_boolean;
 typedef struct data {
     char **text;
     int length;
+    t_boolean increaseNumLines;
 } t_data;
 
 typedef struct command {
@@ -71,9 +72,10 @@ void swipeEventStack(t_command *, t_command **, t_command **);
 // text manager
 t_text createText();
 t_data readText(t_text *, int, int);
-void writeText(t_text *, t_data, int, int);
-void deleteTextLines(t_text *, int, int);
+void writeText(t_text *, t_data *, int, int);
+void rewriteText(t_text *, t_data, int, int);
 void addTextInMiddle(t_text *, t_data, int, int);
+void deleteTextLines(t_text *, int, int);
 void checkAndReallocText(t_text *, int);
 void createSpaceInMiddleText(t_text *, int, int);
 t_boolean checkIfExceedBufferSize(int, int);
@@ -329,7 +331,7 @@ void changeCommand(t_command *command, t_text *text)
         return;
 
     command -> prevData = readText(text, command -> start, command -> end);
-    writeText(text, command -> data, command -> start, command -> end);
+    writeText(text, &command -> data, command -> start, command -> end);
     return;
 }
 
@@ -351,12 +353,12 @@ void deleteCommand(t_command *command, t_text *text)
 
 void undoCommand(t_text *text, t_history *history)
 {
-    // cannot undo 0 or lower
-    if(history -> commandsToTravel >= 0)
-        return;
-
     // set as positive value
     history -> commandsToTravel *= -1;
+
+    // cannot undo 0 or lower
+    if(history -> commandsToTravel <= 0)
+        return;
 
     // undo commands
     for(int i = 0; i < history -> commandsToTravel; i++)
@@ -541,7 +543,7 @@ void revertChange(t_command *command, t_text *text)
     }
     else
     {
-        writeText(text, app, command -> start, command -> end);
+        rewriteText(text, app, command -> start, command -> end);
     }
 
     // swap
@@ -649,22 +651,34 @@ void deleteTextLines(t_text *text, int start, int end)
     text -> numLines = text -> numLines - numLinesToDelete;
 }
 
-void shiftText(t_text *text, int start, int end)
+void writeText(t_text *text, t_data *data, int start, int end)
 {
-    int numLinesToShift;
-    numLinesToShift = text -> numLines - end;
-    for(int i = 0; i < numLinesToShift; i++)
+    // check data
+    if(!isDataValidForWrite(text, *data, start))
+        return;
+
+    // start cannot be less or equal than 0
+    if(start <= 0)
+        start = 1;
+
+    // check if this write will append new text
+    if(end > text -> numLines)
     {
-        // overwrite lines from start to end
-        text -> lines[start + i - 1] = text -> lines[end + i];
+        // check for reallocation
+        checkAndReallocText(text, end);
+        // update text num lines
+        text -> numLines = end;
+        data -> increaseNumLines = true;
     }
+
+    // write lines
+    writeDataToText(text, *data, start);
+
+    return;
 }
 
-void writeText(t_text *text, t_data data, int start, int end)
+void rewriteText(t_text *text, t_data data, int start, int end)
 {
-    int numLinesToWrite;
-    int numCurrLine;
-
     // check data
     if(!isDataValidForWrite(text, data, start))
         return;
@@ -681,6 +695,10 @@ void writeText(t_text *text, t_data data, int start, int end)
         // update text num lines
         text -> numLines = end;
     }
+    else if(data.increaseNumLines == true)
+    {
+        text -> numLines = end;
+    }
 
     // write lines
     writeDataToText(text, data, start);
@@ -690,10 +708,8 @@ void writeText(t_text *text, t_data data, int start, int end)
 
 void addTextInMiddle(t_text *text, t_data data, int start, int end)
 {
-    int numLinesToAdd = data.length;
-    int newLastLine = text -> numLines + numLinesToAdd;
+    int newLastLine = text -> numLines + data.length;
     int numLinesToMove = text -> numLines - start + 1;
-    int numTextBuffersAllocated;
 
     // check data
     if(!isDataValidForWrite(text, data, start))
@@ -708,6 +724,17 @@ void addTextInMiddle(t_text *text, t_data data, int start, int end)
     // save new num lines
     text -> numLines = newLastLine;
     return;
+}
+
+void shiftText(t_text *text, int start, int end)
+{
+    int numLinesToShift;
+    numLinesToShift = text -> numLines - end;
+    for(int i = 0; i < numLinesToShift; i++)
+    {
+        // overwrite lines from start to end
+        text -> lines[start + i - 1] = text -> lines[end + i];
+    }
 }
 
 t_boolean isDataValidForWrite(t_text *text, t_data data, int start)
