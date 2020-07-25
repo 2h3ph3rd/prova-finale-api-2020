@@ -634,7 +634,7 @@ void deleteTextLines(t_text *text, int start, int end)
     // than simply decrease text num lines to overwrite them
     if(end >= text -> numLines)
     {
-        text -> numLines = text -> numLines - (text -> numLines - start + 1);
+        text -> numLines = start - 1;
         return;
     }
 
