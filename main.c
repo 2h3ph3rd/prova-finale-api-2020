@@ -78,6 +78,7 @@ char **allocateBiggerTextArea(t_text *, int);
 void writeDataToText(t_text *, t_data, int);
 t_boolean isDataValidForWrite(t_text *, t_data, int);
 void shiftText(t_text *, int, int);
+void reallocTextHead(t_text *, int);
 
 // utilities
 char* readLine();
@@ -622,6 +623,7 @@ void shiftText(t_text *text, int start, int end)
             // overwrite lines from start to end
             text -> lines[end - i - 1] = text -> lines[i];
         }
+        reallocTextHead(text, end - numLinesToShift);
     }
     else
     {
@@ -632,6 +634,16 @@ void shiftText(t_text *text, int start, int end)
             text -> lines[start + i - 1] = text -> lines[end + i];
         }
     }
+}
+
+void reallocTextHead(t_text *text, int newHead)
+{
+    for(int i = 0; i < newHead; i++)
+    {
+        free(text -> lines[i]);
+        text -> lines[i] = NULL;
+    }
+    text -> lines = &(text -> lines[newHead]);
 }
 
 void writeText(t_text *text, t_data data, int start, int end)
