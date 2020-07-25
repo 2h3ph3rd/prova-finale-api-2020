@@ -110,8 +110,8 @@
 .
 115. Most people find the concept of programming obvious, but the doing impossible.
 81. In computing, turning the obvious into the useful is a living definition of the word "frustration".
-90. Computation has made the tree flower.
-90. Computation has made the tree flower.
+.
+.
 .
 .
 .
@@ -120,16 +120,16 @@
 .
 73. It is not a language's weakness but its strengths that control the gradient of its change: Alas, a language never escapes its embryonic sac.
 23. To understand a program you must become both the machine and the program.
-90. Computation has made the tree flower.
-90. Computation has made the tree flower.
 .
 .
 .
 .
 .
 .
-90. Computation has made the tree flower.
-90. Computation has made the tree flower.
+.
+.
+.
+.
 .
 .
 .
@@ -209,7 +209,7 @@
 .
 .
 66. Making something variable is easy. Controlling duration of constancy is the trick.
-66. Making something variable is easy. Controlling duration of constancy is the trick.
+.
 .
 .
 .

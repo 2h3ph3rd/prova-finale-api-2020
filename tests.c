@@ -33,7 +33,9 @@ int main()
 		"/publicTests/rollercoaster1",
 		"/publicTests/rollercoaster2",
 		"/publicTests/alterninghistory1",
-		"/publicTests/alterninghistory2"
+		"/publicTests/alterninghistory2",
+		"/notTaggedTests/1",
+		"/notTaggedTests/2"
     };
 
 	int i = 0;

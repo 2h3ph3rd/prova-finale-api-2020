@@ -109,7 +109,6 @@
 .
 .
 8. A programming language is low level when its programs require attention to the irrelevant.
-8. A programming language is low level when its programs require attention to the irrelevant.
 .
 .
 .
@@ -118,8 +117,9 @@
 .
 .
 .
-21. Optimization hinders evolution.
-8. A programming language is low level when its programs require attention to the irrelevant.
+.
+.
+.
 .
 .
 .
