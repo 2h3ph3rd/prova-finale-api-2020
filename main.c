@@ -646,18 +646,15 @@ void writeText(t_text *text, t_data data, int start, int end)
     // check if this write will append new text
     if(end > text -> numLines)
     {
-        // check if exceed allocated memory, otherwise realloc
-        if(checkIfExceedBufferSize(text -> numLines, end))
-        {
-            // reallocate a new area with a more buffer size
-            text -> lines = allocateBiggerTextArea(text, end);
-        }
+        // check for reallocation
+        checkAndReallocText(text, end);
         // update text num lines
         text -> numLines = end;
     }
 
     // write lines
     writeDataToText(text, data, start);
+
     return;
 }
 
@@ -723,11 +720,11 @@ t_boolean isDataValidForWrite(t_text *text, t_data data, int start)
 // checkAndReallocText: check if exceed allocated memory, than realloc
 void checkAndReallocText(t_text *text, int newLastLine)
 {
-    int numTextBuffersAllocated;
-    numTextBuffersAllocated = (text -> numLines / TEXT_BUFFER_SIZE) + 1;
-    if((newLastLine / TEXT_BUFFER_SIZE  + 1) > numTextBuffersAllocated)
+    // check if exceed allocated memory, otherwise realloc
+    if(checkIfExceedBufferSize(text -> numLines, newLastLine))
     {
-        text -> lines = realloc(text -> lines, sizeof(char *) * numTextBuffersAllocated * TEXT_BUFFER_SIZE);
+        // reallocate a new area with a more buffer size
+        text -> lines = allocateBiggerTextArea(text, newLastLine);
     }
 }
 
