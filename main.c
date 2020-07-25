@@ -76,6 +76,7 @@ void createSpaceInMiddleText(t_text *, int, int);
 t_boolean checkIfExceedBufferSize(int, int);
 char **allocateBiggerTextArea(t_text *, int);
 void writeDataToText(t_text *, t_data, int);
+t_boolean isDataValidForWrite(t_text *text, t_data data, int start);
 
 // utilities
 char* readLine();
@@ -581,21 +582,9 @@ void deleteTextLines(t_text *text, int start, int end)
     int numLinesToOverwrite = text -> numLines - end;
     int numLinesToDelete = end - start + 1;
 
-    /*
-        Process:
-        1. check data
-        2. overwrite lines
-        3. save new num lines
-    */
-
-    // 1. check data
-    // start cannot be greater than text num lines
-    if(start > text -> numLines + 1)
-        return;
-
-    // cannot delete a num lines lower or equal than 0
-    if(numLinesToDelete <= 0)
-        return;
+    // start cannot be less or equal than 0
+    if(start <= 0)
+        start = 1;
 
     // if end is bigger or equal text num lines
     // than simply decrease text num lines to overwrite them
@@ -605,9 +594,6 @@ void deleteTextLines(t_text *text, int start, int end)
         return;
     }
 
-    // start cannot be less or equal than 0
-    if(start <= 0)
-        start = 1;
 
     // 2. overwrite lines
     for(int i = 0; i < numLinesToOverwrite; i++)
@@ -626,12 +612,7 @@ void writeText(t_text *text, t_data data, int start, int end)
     int numCurrLine;
 
     // check data
-    // cannot write out of text
-    if(start > text -> numLines + 1)
-        return;
-
-    // cannot write zero or lower lines
-    if(data.length <= 0)
+    if(!isDataValidForWrite(text, data, start))
         return;
 
     // check if this write will append new text
@@ -655,12 +636,7 @@ void writeText(t_text *text, t_data data, int start, int end)
 void rewriteText(t_text *text, t_data data, int start, int end)
 {
     // check data
-    // cannot write out of text
-    if(start > text -> numLines + 1)
-        return;
-
-    // cannot write zero or lower lines
-    if(data.length <= 0)
+    if(!isDataValidForWrite(text, data, start))
         return;
 
     // check for new lines to add
@@ -689,12 +665,7 @@ void addTextInMiddle(t_text *text, t_data data, int start, int end)
     int numTextBuffersAllocated;
 
     // check data
-    // cannot write out of text
-    if(start > text -> numLines + 1)
-        return;
-
-    // cannot write zero or lower lines
-    if(data.length <= 0)
+    if(!isDataValidForWrite(text, data, start))
         return;
 
     // create space
@@ -706,6 +677,20 @@ void addTextInMiddle(t_text *text, t_data data, int start, int end)
     // save new num lines
     text -> numLines = newLastLine;
     return;
+}
+
+t_boolean isDataValidForWrite(t_text *text, t_data data, int start)
+{
+    // 1. check data
+    // start cannot be greater than text num lines
+    if(start > text -> numLines + 1)
+        return false;
+
+    // cannot delete a num lines lower or equal than 0
+    if(data.length <= 0)
+        return false;
+
+    return true;
 }
 
 // checkAndReallocText: check if exceed allocated memory, than realloc
