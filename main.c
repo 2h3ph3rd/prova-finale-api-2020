@@ -167,6 +167,7 @@ t_data readCommandData(t_command command)
 
     // save data length
     data.length = numLines;
+    data.increaseNumLines = false;
     #ifdef DEBUG
     if(line[0] != '.')
     {
@@ -589,6 +590,7 @@ t_data readText(t_text *text, int start, int end)
 
     data.text = NULL;
     data.length = 0;
+    data.increaseNumLines = false;
 
     // end cannot be greater then numLines
     if(end > text -> numLines)
