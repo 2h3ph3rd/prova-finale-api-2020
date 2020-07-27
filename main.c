@@ -579,7 +579,7 @@ t_text createText()
 {
     t_text text;
     text.numLines = 0;
-    text.lines = realloc(text.lines, sizeof(char *) * TEXT_BUFFER_SIZE);
+    text.lines = malloc(sizeof(char *) * TEXT_BUFFER_SIZE);
     return text;
 }
 
