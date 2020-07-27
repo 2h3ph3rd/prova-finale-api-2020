@@ -5,6 +5,9 @@ TEST_FOLDER_PATH = ./tests
 all: build run
 
 build:
+	gcc -o $(BUILD_FILE) main.c -lm
+
+build-prod:
 	/usr/bin/gcc -DEVAL -std=gnu11 -O2 -pipe -static -s -o $(BUILD_FILE) main.c -lm
 
 prod:
