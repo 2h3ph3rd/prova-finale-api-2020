@@ -1,0 +1,26 @@
+1,5c
+Prima riga
+Seconda riga
+Terza riga
+Quarta riga
+Quinta riga
+.
+1,3c
+Nuova prima riga
+Nuova seconda riga
+Nuova terza riga
+.
+1,5c
+a
+b
+c
+d
+e
+.
+5u
+1,5p
+2r
+1,5p
+5u
+1,5p
+q
