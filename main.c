@@ -536,8 +536,9 @@ void revertChange(t_command *command, t_text *text)
     // avoid editing of prevData pointer
     app = command -> prevData;
     // restore prev data
-    if(app.text == NULL)
+    if(app.text == NULL && command -> start == 1)
     {
+        free(text -> lines);
         *text = createText();
     }
     else
