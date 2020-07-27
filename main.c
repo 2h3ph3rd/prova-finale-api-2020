@@ -271,14 +271,16 @@ void executeCommand(t_command *command, t_text *text, t_history *history)
             history -> timeTravelMode = true;
         break;
         case 'r':
-            if(command -> start > history -> numFutureCommands)
+            if(history -> timeTravelMode = true)
             {
-                command -> start = history -> numFutureCommands;
+                if(command -> start > history -> numFutureCommands)
+                {
+                    command -> start = history -> numFutureCommands;
+                }
+                history -> commandsToTravel += command -> start;
+                history -> numPastCommands += command -> start;
+                history -> numFutureCommands -= command -> start;
             }
-            history -> commandsToTravel += command -> start;
-            history -> numPastCommands += command -> start;
-            history -> numFutureCommands -= command -> start;
-            history -> timeTravelMode = true;
         break;
         #ifdef DEBUG
         default:
