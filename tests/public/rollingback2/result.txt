@@ -118,9 +118,6 @@
 .
 .
 .
-111. Why did the Roman Empire collapse? What is Latin for office automation?
-16. Every program has (at least) two purposes: the one for which it was written, and another for which it wasn't.
-8. A programming language is low level when its programs require attention to the irrelevant.
 .
 .
 .
@@ -131,6 +128,7 @@
 .
 .
 .
+21. Optimization hinders evolution.
 .
 .
 .
@@ -139,6 +137,8 @@
 .
 .
 .
+.
+21. Optimization hinders evolution.
 .
 .
 .

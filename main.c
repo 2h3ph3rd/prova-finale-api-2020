@@ -61,7 +61,7 @@ void redoCommand(t_text *, t_history *);
 // update history
 t_history createHistory();
 void updateHistory(t_history *, t_command *);
-void updateTimeTravelMode(t_history *, t_command *);
+void checkForPastChanges(t_history *, t_command *);
 void forgetFuture(t_history *);
 void addNewEventToHistory(t_history *, t_command *);
 void backToTheFuture(t_history *history, t_text *text);
@@ -267,6 +267,7 @@ void executeCommand(t_command *command, t_text *text, t_history *history)
             }
             history -> commandsToTravel -= command -> start;
             history -> numPastCommands -= command -> start;
+            history -> numFutureCommands += command -> start;
             history -> timeTravelMode = true;
         break;
         case 'r':
@@ -275,6 +276,7 @@ void executeCommand(t_command *command, t_text *text, t_history *history)
                 command -> start = history -> numFutureCommands;
             }
             history -> commandsToTravel += command -> start;
+            history -> numPastCommands += command -> start;
             history -> numFutureCommands -= command -> start;
             history -> timeTravelMode = true;
         break;
@@ -410,18 +412,19 @@ t_history createHistory()
 
 void updateHistory(t_history *history, t_command *command)
 {
-    updateTimeTravelMode(history, command);
+    checkForPastChanges(history, command);
     addNewEventToHistory(history, command);
     return;
 }
 
-void updateTimeTravelMode(t_history *history, t_command *command)
+void checkForPastChanges(t_history *history, t_command *command)
 {
     // only when true check if future is change
     // than you cannot turn back to your dimension
     if(history -> timeTravelMode == true)
     {
         // only while doing undo and redo you can return in the future
+        // modify the past creates a new future
         if(command -> type == 'c' || command -> type == 'd')
         {
             history -> timeTravelMode = false;
@@ -492,8 +495,6 @@ void backToThePast(t_history *history, t_text *text)
     #endif
 
     swipeEventStack(command, &history -> pastCommands, &history -> futureCommands);
-    history -> numPastCommands--;
-    history -> numFutureCommands++;
     return;
 }
 
@@ -525,9 +526,6 @@ void backToTheFuture(t_history *history, t_text *text)
 
     // command go to other stack
     swipeEventStack(command, &history -> futureCommands, &history -> pastCommands);
-
-    history -> numPastCommands--;
-    history -> numFutureCommands++;
     return;
 }
 

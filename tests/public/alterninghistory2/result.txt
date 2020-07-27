@@ -118,8 +118,8 @@
 .
 .
 .
-.
-.
+73. It is not a language's weakness but its strengths that control the gradient of its change: Alas, a language never escapes its embryonic sac.
+23. To understand a program you must become both the machine and the program.
 .
 .
 .
@@ -208,8 +208,8 @@
 .
 .
 .
-38. Structured Programming supports the law of the excluded middle.
-13. If two people write exactly the same program, each should be put into microcode and then they certainly won't be the same.
+.
+.
 .
 .
 .
@@ -229,7 +229,7 @@
 .
 .
 different tribes (FORTRAN, LISP, ALGOL, SNOBOL, etc.) could use one that doesn't require them to carry a blackboard on their ponies.
-13. If two people write exactly the same program, each should be put into microcode and then they certainly won't be the same.
+.
 .
 .
 .
