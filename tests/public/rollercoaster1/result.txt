@@ -58,7 +58,7 @@
 .
 .
 .
-1. One man's constant is another man's variable.
+.
 .
 .
 .
@@ -88,9 +88,9 @@
 .
 .
 .
-15. Everything should be built top-down, except the first time.
-1. One man's constant is another man's variable.
-37. The most important computer is the one that rages in our skulls and ever seeks that satisfactory external emulator. The standarization of real computers would be a disaster - and so it probably won't happen.
+.
+.
+.
 .
 .
 .
@@ -118,8 +118,6 @@
 .
 .
 .
-15. Everything should be built top-down, except the first time.
-1. One man's constant is another man's variable.
 .
 .
 .
@@ -128,8 +126,10 @@
 .
 .
 .
-98. In computing, the mean time to failure keeps getting shorter.
-11. If you have a procedure with ten parameters, you probably missed some.
+.
+.
+.
+.
 .
 .
 .
@@ -168,8 +168,8 @@
 .
 .
 .
-1. One man's constant is another man's variable.
-37. The most important computer is the one that rages in our skulls and ever seeks that satisfactory external emulator. The standarization of real computers would be a disaster - and so it probably won't happen.
+74. Is it possible that software is not like anything else, that it is meant to be discarded: that the whole point is to see it as a soap bubble?
+66. Making something variable is easy. Controlling duration of constancy is the trick.
 .
 .
 .
@@ -208,8 +208,8 @@
 .
 .
 .
-24. Perhaps if we wrote programs from childhood on, as adults we'd be able to read them.
-66. Making something variable is easy. Controlling duration of constancy is the trick.
+62. In computing, invariants are ephemeral.
+52. Systems have sub-systems and sub-systems have sub-systems and so on ad infinitum - which is why we're always starting over.
 .
 .
 .
@@ -218,16 +218,7 @@
 .
 .
 .
-104. The proof of a system's value is its existence.
-.
-.
-.
-.
-.
-.
-.
-.
-.
+52. Systems have sub-systems and sub-systems have sub-systems and so on ad infinitum - which is why we're always starting over.
 .
 .
 .
@@ -249,6 +240,15 @@
 .
 .
 .
+.
+.
+.
+.
+.
+.
+.
+.
+52. Systems have sub-systems and sub-systems have sub-systems and so on ad infinitum - which is why we're always starting over.
 .
 .
 .

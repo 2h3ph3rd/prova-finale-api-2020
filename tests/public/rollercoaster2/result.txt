@@ -108,7 +108,8 @@
 .
 .
 .
-1. One man's constant is another man's variable.
+32. Programmers are not to be measured by their ingenuity and their logic but by the completeness of their case analysis.
+86. We kid ourselves if we think that the ratio of procedure to  data  in an active data-base system can be made arbitrarily small or even kept small.
 .
 .
 .
@@ -128,8 +129,7 @@
 .
 .
 .
-39. Re graphics: A picture is worth 10K words - but only those to describe the picture. Hardly any sets of 10K words can be adequately described with pictures.
-53. So many good ideas are never heard from again once they embark in a voyage on the semantic gulf.
+.
 .
 .
 .
@@ -198,7 +198,7 @@
 .
 .
 .
-118. If you can imagine a society in which the computer-robot is the only menial, you can imagine anything.
+117. It goes against the grain of modern education to teach children to program. What fun is there in making plans, acquiring discipline in organizing  thoughts,  devoting attention to detail and learning to be self-critical?
 .
 .
 .
@@ -228,7 +228,7 @@
 .
 .
 .
-8. A programming language is low level when its programs require attention to the irrelevant.
+117. It goes against the grain of modern education to teach children to program. What fun is there in making plans, acquiring discipline in organizing  thoughts,  devoting attention to detail and learning to be self-critical?
 .
 .
 .
@@ -238,7 +238,7 @@
 .
 .
 .
-.
+117. It goes against the grain of modern education to teach children to program. What fun is there in making plans, acquiring discipline in organizing  thoughts,  devoting attention to detail and learning to be self-critical?
 .
 .
 .
@@ -338,7 +338,6 @@
 .
 .
 .
-81. In computing, turning the obvious into the useful is a living definition of the word "frustration".
 .
 .
 .
@@ -399,6 +398,8 @@
 .
 .
 .
+72. An adequate bootstrap is a contradiction in terms.
+98. In computing, the mean time to failure keeps getting shorter.
 .
 .
 .
@@ -427,6 +428,8 @@
 .
 .
 .
+72. An adequate bootstrap is a contradiction in terms.
+98. In computing, the mean time to failure keeps getting shorter.
 .
 .
 .
@@ -435,6 +438,8 @@
 .
 .
 .
+72. An adequate bootstrap is a contradiction in terms.
+98. In computing, the mean time to failure keeps getting shorter.
 .
 .
 .
@@ -443,6 +448,7 @@
 .
 .
 .
+98. In computing, the mean time to failure keeps getting shorter.
 .
 .
 .
@@ -593,12 +599,6 @@
 .
 .
 .
-.
-.
-.
-.
-.
-75. Because of its vitality, the computing field is always in desperate need of new cliches: Banality soothes our nerves.
 .
 .
 .
