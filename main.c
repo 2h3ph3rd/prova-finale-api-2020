@@ -82,7 +82,6 @@ char **allocateBiggerTextArea(t_text *, int);
 void writeDataToText(t_text *, t_data, int);
 t_boolean isDataValidForWrite(t_text *, t_data, int);
 void shiftText(t_text *, int, int);
-void decreaseTextHead(t_text *, int);
 
 // utilities
 char* readLine();
@@ -540,7 +539,6 @@ void revertChange(t_command *command, t_text *text)
     // restore prev data
     if(app.text == NULL && command -> start == 1)
     {
-        free(text -> lines);
         *text = createText();
     }
     else
@@ -745,7 +743,7 @@ void shiftText(t_text *text, int start, int end)
             // overwrite lines from end to start
             text -> lines[end - i - 1] = text -> lines[start - i - 2];
         }
-        decreaseTextHead(text, end - numLinesToShift);
+        text -> lines = &(text -> lines[end - numLinesToShift]);
     }
     else
     {
@@ -756,22 +754,6 @@ void shiftText(t_text *text, int start, int end)
             text -> lines[start + i - 1] = text -> lines[end + i];
         }
     }
-}
-
-void decreaseTextHead(t_text *text, int newHeadNumLine)
-{
-    t_text app;
-
-    // create a text for swap
-    app = createText();
-    // check if needs more memory
-    checkAndReallocText(&app, text -> numLines);
-    // assign new head
-    app.lines = &(text -> lines[newHeadNumLine]);
-    app.numLines = text -> numLines;
-    // save modified text
-    *text = app;
-    return;
 }
 
 t_boolean isDataValidForWrite(t_text *text, t_data data, int start)
