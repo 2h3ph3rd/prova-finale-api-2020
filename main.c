@@ -318,13 +318,12 @@ void printCommand(t_command command, t_text *text)
             numTextLinesToPrint = command.end - command.start + 1;
         }
 
-        data = readText(text, command.start, command.start + numTextLinesToPrint);
-
         for(int i = 0; i < numTextLinesToPrint; i++)
-            printf("%s\n", data.text[i]);
+            printf("%s\n", text -> lines[command.start -1 + i + text -> offset]);
 
         for(int i = text -> numLines; i < command.end; i++)
             printf(".\n");
+
     }
 }
 
