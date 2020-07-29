@@ -467,6 +467,10 @@ void addNewEventToHistory(t_history *history, t_command *command)
         history -> pastCommands = newHead;
         history -> numPastCommands++;
     }
+    else
+    {
+        free(command);
+    }
     return;
 }
 
