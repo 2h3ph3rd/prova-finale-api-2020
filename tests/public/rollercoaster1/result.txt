@@ -90,7 +90,7 @@
 .
 15. Everything should be built top-down, except the first time.
 1. One man's constant is another man's variable.
-37. The most important computer is the one that rages in our skulls and ever seeks that satisfactory external emulator. The standarization of real computers would be a disaster - and so it probably won't happen.
+.
 .
 .
 .
