@@ -1,5 +1,5 @@
-*.out
+/*.out
 # vs code build debug file
-main
+/main
 # prod file
-prod.c
+/prod.c
