@@ -7,14 +7,19 @@ all: build run
 build:
 	gcc -o $(BUILD_FILE) main.c -lm
 
-build-prod:
-	/usr/bin/gcc -DEVAL -std=gnu11 -O2 -pipe -static -s -o $(BUILD_FILE) main.c -lm
-
-prod:
-	python cminify-1.1.1/minifier.py ./main.c > prod.c
-
 run:
 	$(BUILD_FILE)
+
+prod: prod-file prod-build prod-run
+
+prod-file:
+	python cminify-1.1.1/minifier.py ./main.c > prod.c
+
+prod-build:
+	/usr/bin/gcc -DEVAL -std=gnu11 -O2 -pipe -static -s -o prod.out prod.c -lm
+
+prod-run:
+	./prod.out
 
 memcheck:
 	valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes $(BUILD_FILE)
