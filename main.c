@@ -59,7 +59,7 @@ void undoCommand(t_text *, t_history *);
 void redoCommand(t_text *, t_history *);
 
 // update history
-t_history createHistory();
+void createHistory(t_history *);
 void updateHistory(t_history *, t_command *);
 void checkForPastChanges(t_history *, t_command *);
 void forgetFuture(t_history *);
@@ -70,7 +70,7 @@ void revertChange(t_command *command, t_text *text);
 void swipeEventStack(t_command *, t_command **, t_command **);
 
 // text manager
-t_text createText();
+void createText(t_text *);
 t_data readText(t_text *, int, int);
 void writeText(t_text *, t_data *, int, int);
 void rewriteText(t_text *, t_data, int, int);
@@ -403,16 +403,15 @@ void redoCommand(t_text *text, t_history *history)
 
 // ----- UPDATE HISTORY -----
 
-t_history createHistory()
+void createHistory(t_history *history)
 {
-    t_history history;
-    history.commandsToTravel = 0;
-    history.timeTravelMode = false;
-    history.futureCommands = NULL;
-    history.pastCommands = NULL;
-    history.numPastCommands = 0;
-    history.numFutureCommands = 0;
-    return history;
+    history -> commandsToTravel = 0;
+    history -> timeTravelMode = false;
+    history -> futureCommands = NULL;
+    history -> pastCommands = NULL;
+    history -> numPastCommands = 0;
+    history -> numFutureCommands = 0;
+    return;
 }
 
 void updateHistory(t_history *history, t_command *command)
@@ -544,7 +543,7 @@ void revertChange(t_command *command, t_text *text)
     if(app.text == NULL && command -> start == 1)
     {
         free(text -> lines);
-        *text = createText();
+        createText(text);
     }
     else
     {
@@ -579,13 +578,12 @@ void swipeEventStack(t_command *command, t_command **old, t_command **new)
 
 // ----- TEXT MANAGER -----
 
-t_text createText()
+void createText(t_text *text)
 {
-    t_text text;
-    text.numLines = 0;
-    text.offset = 0;
-    text.lines = malloc(sizeof(char *) * TEXT_BUFFER_SIZE);
-    return text;
+    text -> numLines = 0;
+    text -> offset = 0;
+    text -> lines = malloc(sizeof(char *) * TEXT_BUFFER_SIZE);
+    return;
 }
 
 t_data readText(t_text *text, int start, int end)
@@ -866,9 +864,12 @@ void printLine(char* line)
 
 int main()
 {
-    t_text text = createText();
-    t_history history = createHistory();
+    t_text text;
+    t_history history;
     t_command *command;
+
+    createText(&text);
+    createHistory(&history);
 
     /*
         Execution process:
