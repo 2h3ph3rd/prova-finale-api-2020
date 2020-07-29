@@ -740,12 +740,13 @@ void shiftText(t_text *text, int start, int end)
     // check if middle is in first half or in the second
     if(middle < text -> numLines / 2)
     {
-        numLinesToShift = text -> numLines - end;
+        numLinesToShift = start - 1;
         for(int i = 0; i < numLinesToShift; i++)
         {
             // overwrite lines from start to end
-            text -> lines[start + i - 1] = text -> lines[end + i];
+            text -> lines[end - 1 - i] = text -> lines[start - 2 - i];
         }
+        text -> lines = &(text -> lines[end - numLinesToShift]);
     }
     else
     {
