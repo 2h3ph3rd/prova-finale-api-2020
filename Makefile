@@ -21,6 +21,10 @@ prod-build:
 prod-run:
 	./prod.out
 
+memory-leaks:
+	gcc main.c -fsanitize=address -g -o main.out
+	./main.out
+
 memcheck:
 	valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes $(BUILD_FILE)
 
