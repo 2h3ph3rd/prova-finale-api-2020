@@ -165,6 +165,7 @@ t_data readCommandData(t_command command)
 
     // read last line with dot
     line = readLine();
+    free(line);
 
     // save data length
     data.length = numLines;
