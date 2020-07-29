@@ -4,7 +4,7 @@
 // #define DEBUG
 #define MAX_LINE_LENGTH 1024
 #define HISTORY_BUFFER_SIZE 100
-#define TEXT_BUFFER_SIZE 1024
+#define TEXT_BUFFER_SIZE 100000
 
 // ----- TYPES -----
 
@@ -820,6 +820,11 @@ void allocateBiggerTextArea(t_text *actualText, int newLastLine)
 {
     int buffersToAllocate = (newLastLine + actualText -> offset) / TEXT_BUFFER_SIZE + 1;
     actualText -> lines = realloc(actualText -> lines, sizeof(char *) * buffersToAllocate * TEXT_BUFFER_SIZE);
+    // check for realloc errors
+    if(actualText -> lines == NULL)
+    {
+        abort();
+    }
 }
 
 // ----- UTILITIES FUNCTIONS -----
