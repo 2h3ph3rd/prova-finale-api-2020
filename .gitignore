@@ -1,2 +1,5 @@
 *.out
+# vs code build debug file
 main
+# prod file
+prod.c
