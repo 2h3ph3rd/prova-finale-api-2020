@@ -742,6 +742,14 @@ void shiftText(t_text *text, int start, int end)
     // define middle element index in range
     middle = start + (end - start + 1);
 
+    // special cases
+    // start equal to 1 nothing to do, is enough to increase offset
+    if(start == 1)
+    {
+        text -> offset += end;
+        return;
+    }
+
     // check if middle is in first half or in the second
     if(middle < text -> numLines / 2)
     {
