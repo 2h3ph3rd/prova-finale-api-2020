@@ -13,7 +13,6 @@ typedef enum boolean { false, true } t_boolean;
 typedef struct data {
     char **text;
     int length;
-    t_boolean increaseNumLines;
 } t_data;
 
 typedef struct command {
@@ -167,7 +166,7 @@ t_data readCommandData(t_command command)
 
     // save data length
     data.length = numLines;
-    data.increaseNumLines = false;
+
     #ifdef DEBUG
     if(line[0] != '.')
     {
@@ -590,7 +589,6 @@ t_data readText(t_text *text, int start, int end)
 
     data.text = NULL;
     data.length = 0;
-    data.increaseNumLines = false;
 
     // end cannot be greater then numLines
     if(end > text -> numLines)
@@ -651,6 +649,8 @@ void deleteTextLines(t_text *text, int start, int end)
 
     // save new num lines
     text -> numLines = text -> numLines - numLinesToDelete;
+
+    return;
 }
 
 void writeText(t_text *text, t_data *data, int start, int end)
@@ -670,7 +670,6 @@ void writeText(t_text *text, t_data *data, int start, int end)
         checkAndReallocText(text, end);
         // update text num lines
         text -> numLines = end;
-        data -> increaseNumLines = true;
     }
 
     // write lines
@@ -697,9 +696,10 @@ void rewriteText(t_text *text, t_data data, int start, int end)
         // update text num lines
         text -> numLines = end;
     }
-    else if(data.increaseNumLines == true)
+    // check if this command added new lines before
+    else if(end == text -> numLines && data.length < end - start + 1)
     {
-        text -> numLines = end;
+        text -> numLines -= end - data.length;
     }
 
     // write lines
