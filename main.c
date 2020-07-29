@@ -292,6 +292,7 @@ void executeCommand(t_command *command, t_text *text, t_history *history)
 void printCommand(t_command command, t_text *text)
 {
     int numTextLinesToPrint = 0;
+    t_data data;
     if(command.start == 0)
     {
         printf(".\n");
@@ -315,8 +316,10 @@ void printCommand(t_command command, t_text *text)
             numTextLinesToPrint = command.end - command.start + 1;
         }
 
+        data = readText(text, command.start, command.start + numTextLinesToPrint);
+
         for(int i = 0; i < numTextLinesToPrint; i++)
-            printf("%s\n", text -> lines[i + command.start - 1]);
+            printf("%s\n", data.text[i]);
 
         for(int i = text -> numLines; i < command.end; i++)
             printf(".\n");
