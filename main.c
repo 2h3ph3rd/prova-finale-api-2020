@@ -27,6 +27,7 @@ typedef struct command {
 typedef struct text {
     char **lines;
     int numLines;
+    int offset;
 } t_text;
 
 typedef struct history {
@@ -292,6 +293,7 @@ void executeCommand(t_command *command, t_text *text, t_history *history)
 void printCommand(t_command command, t_text *text)
 {
     int numTextLinesToPrint = 0;
+    t_data data;
     if(command.start == 0)
     {
         printf(".\n");
@@ -315,8 +317,10 @@ void printCommand(t_command command, t_text *text)
             numTextLinesToPrint = command.end - command.start + 1;
         }
 
+        data = readText(text, command.start, command.start + numTextLinesToPrint);
+
         for(int i = 0; i < numTextLinesToPrint; i++)
-            printf("%s\n", text -> lines[i + command.start - 1]);
+            printf("%s\n", data.text[i]);
 
         for(int i = text -> numLines; i < command.end; i++)
             printf(".\n");
@@ -579,6 +583,7 @@ t_text createText()
 {
     t_text text;
     text.numLines = 0;
+    text.offset = 0;
     text.lines = malloc(sizeof(char *) * TEXT_BUFFER_SIZE);
     return text;
 }
@@ -612,7 +617,7 @@ t_data readText(t_text *text, int start, int end)
     // read lines
     for(int i = 0; i < numLinesToRead; i++)
     {
-        data.text[i] = text -> lines[start + i - 1];
+        data.text[i] = text -> lines[start + i - 1 + text -> offset];
     }
 
     // set text length
@@ -733,6 +738,7 @@ void shiftText(t_text *text, int start, int end)
 {
     int numLinesToShift;
     int middle;
+    char **app;
 
     // define middle element index in range
     middle = start + (end - start + 1);
@@ -744,9 +750,9 @@ void shiftText(t_text *text, int start, int end)
         for(int i = 0; i < numLinesToShift; i++)
         {
             // overwrite lines from start to end
-            text -> lines[end - 1 - i] = text -> lines[start - 2 - i];
+            text -> lines[end - 1 - i + text -> offset] = text -> lines[start - 2 - i + text -> offset];
         }
-        text -> lines = &(text -> lines[end - numLinesToShift]);
+        text -> offset = end - start + 1;
     }
     else
     {
@@ -754,7 +760,7 @@ void shiftText(t_text *text, int start, int end)
         for(int i = 0; i < numLinesToShift; i++)
         {
             // overwrite lines from start to end
-            text -> lines[start + i - 1] = text -> lines[end + i];
+            text -> lines[start + i - 1 + text -> offset] = text -> lines[end + i + text -> offset];
         }
     }
 }
@@ -776,7 +782,7 @@ t_boolean isDataValidForWrite(t_text *text, t_data data, int start)
 void checkAndReallocText(t_text *text, int newLastLine)
 {
     // check if exceed allocated memory, otherwise realloc
-    if(checkIfExceedBufferSize(text -> numLines, newLastLine))
+    if(checkIfExceedBufferSize(text -> numLines + text -> offset, newLastLine))
     {
         // reallocate a new area with a more buffer size
         text -> lines = allocateBiggerTextArea(text, newLastLine);
@@ -798,7 +804,7 @@ void writeDataToText(t_text *text, t_data data, int start)
     int numCurrLine;
     for(int i = 0; i < data.length; i++)
     {
-        numCurrLine = start + i - 1;
+        numCurrLine = start + i - 1 + text -> offset;
         text -> lines[numCurrLine] = data.text[i];
     }
     return;
@@ -811,7 +817,7 @@ t_boolean checkIfExceedBufferSize(int currNumLines, int newNumLines)
 
 char **allocateBiggerTextArea(t_text *actualText, int newLastLine)
 {
-    return realloc(actualText -> lines, sizeof(char *) * (newLastLine / TEXT_BUFFER_SIZE + 1) * TEXT_BUFFER_SIZE);
+    return realloc(actualText -> lines + actualText -> offset, sizeof(char *) * (newLastLine / TEXT_BUFFER_SIZE + 1) * TEXT_BUFFER_SIZE);
 }
 
 // ----- UTILITIES FUNCTIONS -----
