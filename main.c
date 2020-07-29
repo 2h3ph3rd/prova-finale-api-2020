@@ -5,6 +5,7 @@
 #define MAX_LINE_LENGTH 1024
 #define HISTORY_BUFFER_SIZE 100
 #define TEXT_BUFFER_SIZE 100000
+#define OFFSET_TOLLERANCE 1000
 
 // ----- TYPES -----
 
@@ -585,7 +586,7 @@ void swipeEventStack(t_command *command, t_command **old, t_command **new)
 void createText(t_text *text)
 {
     text -> numLines = 0;
-    text -> offset = 0;
+    text -> offset = OFFSET_TOLLERANCE;
     text -> lines = malloc(sizeof(char *) * TEXT_BUFFER_SIZE);
     return;
 }
@@ -718,21 +719,18 @@ void rewriteText(t_text *text, t_data data, int start, int end)
 
 void addTextInMiddle(t_text *text, t_data data, int start, int end)
 {
-    int newLastLine = text -> numLines + data.length;
-    int numLinesToMove = text -> numLines - start + 1;
-
     // check data
     if(!isDataValidForWrite(text, data, start))
         return;
 
     // create space
-    createSpaceInMiddleText(text, numLinesToMove, newLastLine);
+    createSpaceInMiddleText(text, start, data.length);
 
     // write lines
     writeDataToText(text, data, start);
 
     // save new num lines
-    text -> numLines = newLastLine;
+    text -> numLines = text -> numLines + data.length;
     return;
 }
 
@@ -764,6 +762,7 @@ void shiftText(t_text *text, int start, int end)
             text -> lines[start + i - 1 + text -> offset] = text -> lines[end + i + text -> offset];
         }
     }
+    return;
 }
 
 t_boolean isDataValidForWrite(t_text *text, t_data data, int start)
@@ -791,13 +790,40 @@ void checkAndReallocText(t_text *text, int newLastLine)
 }
 
 // createSpaceInMiddleText: move text lines to create space
-void createSpaceInMiddleText(t_text *text, int numLinesToMove, int newLastLine)
+void createSpaceInMiddleText(t_text *text, int start, int dataLength)
 {
-    for(int i = 0; i < numLinesToMove; i++)
+    int newExtremeValue;
+    int numLinesToMove;
+    int middle;
+
+    // define middle element index in range
+    middle = start + dataLength / 2;
+
+    // check if middle is in first half or in the second
+    if(middle < text -> numLines / 2)
     {
-        // overwrite lines from start to new end
-        text -> lines[newLastLine - i - 1 + text -> offset] = text -> lines[text -> numLines - i - 1 + text -> offset];
+        numLinesToMove = start + dataLength - 1;
+        newExtremeValue = text -> offset - dataLength;
+        // newExtremeValue = text -> offset + data.length;
+        for(int i = 0; i < numLinesToMove; i++)
+        {
+            // overwrite lines from start to end
+            text -> lines[newExtremeValue + i] = text -> lines[text -> offset + i];
+        }
+        text -> offset -= dataLength;
     }
+    else
+    {
+        numLinesToMove = text -> numLines - start + 1;
+        newExtremeValue = text -> numLines + dataLength;
+        for(int i = 0; i < numLinesToMove; i++)
+        {
+            // overwrite lines from old to new end
+            text -> lines[newExtremeValue - i - 1 + text -> offset] = text -> lines[text -> numLines - i - 1 + text -> offset];
+        }
+    }
+
+    return;
 }
 
 void writeDataToText(t_text *text, t_data data, int start)
