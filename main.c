@@ -82,7 +82,6 @@ char **allocateBiggerTextArea(t_text *, int);
 void writeDataToText(t_text *, t_data, int);
 t_boolean isDataValidForWrite(t_text *, t_data, int);
 void shiftText(t_text *, int, int);
-void decreaseTextHead(t_text *, int);
 
 // utilities
 char* readLine();
@@ -733,45 +732,12 @@ void addTextInMiddle(t_text *text, t_data data, int start, int end)
 void shiftText(t_text *text, int start, int end)
 {
     int numLinesToShift;
-    int middle;
-    // find index of middle element
-    middle = start + (end - start + 1) / 2;
-    // check if data to shift is in first half or in the second
-    if(middle < text -> numLines / 2)
+    numLinesToShift = text -> numLines - end;
+    for(int i = 0; i < numLinesToShift; i++)
     {
-        numLinesToShift = start - 1;
-        for(int i = 0; i < numLinesToShift; i++)
-        {
-            // overwrite lines from end to start
-            text -> lines[end - i - 1] = text -> lines[start - i - 2];
-        }
-        decreaseTextHead(text, end - numLinesToShift);
+        // overwrite lines from start to end
+        text -> lines[start + i - 1] = text -> lines[end + i];
     }
-    else
-    {
-        numLinesToShift = text -> numLines - end;
-        for(int i = 0; i < numLinesToShift; i++)
-        {
-            // overwrite lines from start to end
-            text -> lines[start + i - 1] = text -> lines[end + i];
-        }
-    }
-}
-
-void decreaseTextHead(t_text *text, int newHeadNumLine)
-{
-    t_text app;
-
-    // create a text for swap
-    app = createText();
-    // check if needs more memory
-    checkAndReallocText(&app, text -> numLines);
-    // assign new head
-    app.lines = &(text -> lines[newHeadNumLine]);
-    app.numLines = text -> numLines;
-    // save modified text
-    *text = app;
-    return;
 }
 
 t_boolean isDataValidForWrite(t_text *text, t_data data, int start)
