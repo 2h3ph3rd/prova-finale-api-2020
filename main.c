@@ -676,7 +676,7 @@ void writeText(t_text *text, t_data *data, int start, int end)
     if(end > text -> numLines)
     {
         // check for reallocation
-        checkAndReallocText(text, end);
+        // checkAndReallocText(text, end);
         // update text num lines
         text -> numLines = end;
     }
@@ -701,7 +701,7 @@ void rewriteText(t_text *text, t_data data, int start, int end)
     if(end > text -> numLines)
     {
         // check for reallocation
-        checkAndReallocText(text, end);
+        // checkAndReallocText(text, end);
         // update text num lines
         text -> numLines = end;
     }
