@@ -732,11 +732,29 @@ void addTextInMiddle(t_text *text, t_data data, int start, int end)
 void shiftText(t_text *text, int start, int end)
 {
     int numLinesToShift;
-    numLinesToShift = text -> numLines - end;
-    for(int i = 0; i < numLinesToShift; i++)
+    int middle;
+
+    // define middle element index in range
+    middle = start + (end - start + 1);
+
+    // check if middle is in first half or in the second
+    if(middle < text -> numLines / 2)
     {
-        // overwrite lines from start to end
-        text -> lines[start + i - 1] = text -> lines[end + i];
+        numLinesToShift = text -> numLines - end;
+        for(int i = 0; i < numLinesToShift; i++)
+        {
+            // overwrite lines from start to end
+            text -> lines[start + i - 1] = text -> lines[end + i];
+        }
+    }
+    else
+    {
+        numLinesToShift = text -> numLines - end;
+        for(int i = 0; i < numLinesToShift; i++)
+        {
+            // overwrite lines from start to end
+            text -> lines[start + i - 1] = text -> lines[end + i];
+        }
     }
 }
 
