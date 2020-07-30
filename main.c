@@ -586,6 +586,7 @@ void createNewText(t_text **text)
 {
     (*text)->numLines = 0;
     (*text)->offset = OFFSET_TOLLERANCE;
+    free((*text)->lines);
     (*text)->lines = malloc(sizeof(char *) * TEXT_BUFFER_SIZE);
     return;
 }
