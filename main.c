@@ -198,12 +198,12 @@ t_data readCommandData(t_command command) {
     // save data length
     data.length = numLines;
 
-#ifdef DEBUG
-    if(line[0] != '.')
-    {
-        printf("ERROR: change command not have a dot as last line\n");
-    }
-#endif
+    #ifdef DEBUG
+        if(line[0] != '.')
+        {
+            printf("ERROR: change command not have a dot as last line\n");
+        }
+    #endif
     return data;
 }
 
@@ -480,12 +480,12 @@ void backToThePast(t_history *history, t_text *text) {
         if (command->prevData.text != NULL)
             addTextInMiddle(text, command->prevData, command->start, command->end);
     }
-#ifdef DEBUG
+    #ifdef DEBUG
     else
     {
         printf("ERROR: try to time travel with a bad command\n");
     }
-#endif
+    #endif
 
     swipeEventStack(command, &history->pastCommands, &history->futureCommands);
     return;
@@ -506,11 +506,13 @@ void backToTheFuture(t_history *history, t_text *text) {
         // delete command to redo
     else if (command->type == 'd') {
         deleteCommand(command, text);
-    } else {
-#ifdef DEBUG
-        printf("ERROR: try to time travel with a bad command\n");
-#endif
     }
+    #ifdef DEBUG
+    else
+    {
+        printf("ERROR: try to time travel with a bad command\n");
+    }
+    #endif
 
     // command go to other stack
     swipeEventStack(command, &history->futureCommands, &history->pastCommands);
