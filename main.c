@@ -161,6 +161,7 @@ t_command *readCommand() {
     // initialize prevData
     command->prevData.text = NULL;
     command->prevData.length = 0;
+
     return command;
 }
 
@@ -360,8 +361,10 @@ void deleteCommand(t_command *command, t_text *text) {
         command->start = 1;
     }
     // start cannot be greater than last line
-    // if(command -> start > text -> numLines)
-    //     return;
+    if(command -> start > text -> numLines)
+    {
+        return;
+    }
 
     command->prevData = readText(text, command->start, command->end);
     deleteTextLines(text, command->start, command->end);
