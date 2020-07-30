@@ -121,6 +121,8 @@ t_boolean isDataValidForWrite(t_text *, t_data, int);
 
 void shiftText(t_text *, int, int);
 
+void readAndWriteText(t_text *, t_command *);
+
 // utilities
 char *readLine();
 
@@ -350,8 +352,7 @@ void changeCommand(t_command *command, t_text *text) {
     // if(command -> start > text -> numLines + 1)
     //    return;
 
-    command->prevData = readText(text, command->start, command->end);
-    writeText(text, &command->data, command->start, command->end);
+    readAndWriteText(text, command);
     return;
 }
 
@@ -629,6 +630,71 @@ t_data readText(t_text *text, int start, int end) {
 
     return data;
 }
+
+void readAndWriteText(t_text *text, t_command *command)
+{
+    int end = command->end;
+    int numLinesToRead = 0;
+    int numLinesToAppend = 0;
+    int numCurrLine = 0;
+    int numLinesWritten = 0;
+
+    command->prevData.text = NULL;
+    command->prevData.length = 0;
+
+    // check data
+    if (!isDataValidForWrite(text, command->data, command->start))
+        return;
+
+    // start cannot be less or equal than 0
+    // if (command->start <= 0)
+    //     command->start = 1;
+
+    // check if end not exceed numLines, otherwise end must be decrease to it
+    if (end > text->numLines)
+        end = text->numLines;
+
+    // allocate an array of strings
+    // 1,3c -> 3 - 1 + 1 = 3 lines to write
+    numLinesToRead = end - command->start + 1;
+
+    if(numLinesToRead > 0)
+    {
+        command->prevData.text = malloc(sizeof(char *) * numLinesToRead);
+
+        // read and write lines
+        for (int i = 0; i < numLinesToRead; i++) {
+            numCurrLine = command->start + i - 1 + text->offset;
+            // save prevData
+            command->prevData.text[i] = text->lines[numCurrLine];
+            // update text
+            text->lines[numCurrLine] = command->data.text[i];
+            numLinesWritten++;
+        }
+    }
+
+    // write append lines
+    numLinesToAppend = command->data.length - numLinesToRead;
+    for (int i = 0; i < numLinesToAppend; i++) {
+        numCurrLine = command->start + i - 1 + text->offset + numLinesWritten;
+        // update text
+        text->lines[numCurrLine] = command->data.text[i + numLinesWritten];
+    }
+
+    // set prev data text length
+    command->prevData.length = numLinesToRead;
+
+    // check if this write append new text
+    if (command->end > text->numLines) {
+        // check for reallocation
+        // checkAndReallocText(text, end);
+        // update text num lines
+        text->numLines = command->end;
+    }
+
+    return;
+}
+
 
 void deleteTextLines(t_text *text, int start, int end) {
     int numLinesToDelete = end - start + 1;
