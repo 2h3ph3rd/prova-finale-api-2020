@@ -90,8 +90,12 @@ void revertChange(t_command *command, t_text *text);
 
 void swipeEventStack(t_command *, t_command **, t_command **);
 
+void returnToStart(t_text *, t_history *);
+
 // text manager
 void createText(t_text *);
+
+void createNewText(t_text **);
 
 t_data readText(t_text *, int, int);
 
@@ -123,6 +127,8 @@ char *readLine();
 void printLine(char *);
 
 int stringSize(char *string);
+
+void swipeData(t_data *, t_data *);
 
 // ----- READ COMMAND -----
 
@@ -298,11 +304,11 @@ void executeCommand(t_command *command, t_text *text, t_history *history) {
                 history->numFutureCommands -= command->start;
             }
             break;
-#ifdef DEBUG
+        #ifdef DEBUG
             default:
                 printf("ERROR: cannot identify command type\n");
             break;
-#endif
+        #endif
     }
 }
 
@@ -362,6 +368,19 @@ void deleteCommand(t_command *command, t_text *text) {
     return;
 }
 
+void returnToStart(t_text *text, t_history *history)
+{
+    // move commands to futureStack
+    for (int i = 0; i < history->commandsToTravel; i++) {
+        swipeData(&(history->pastCommands->data), &(history->pastCommands->prevData));
+        swipeEventStack(history->pastCommands, &history->pastCommands, &history->futureCommands);
+    }
+    // create new empty text
+    createNewText(&text);
+    history->commandsToTravel = 0;
+    return;
+}
+
 void undoCommand(t_text *text, t_history *history) {
     // set as positive value
     history->commandsToTravel *= -1;
@@ -369,6 +388,12 @@ void undoCommand(t_text *text, t_history *history) {
     // cannot undo 0 or lower
     // if(history -> commandsToTravel <= 0)
     //     return;
+
+    // if after undo remain no commands, so simple go back to the start
+    if(history->numPastCommands == 0) {
+        returnToStart(text, history);
+        return;
+    }
 
     // undo commands
     for (int i = 0; i < history->commandsToTravel; i++) {
@@ -438,8 +463,6 @@ void forgetFuture(t_history *history) {
     while (command != NULL) {
         app = command;
         command = command->next;
-        free(app->data.text);
-        free(app->prevData.text);
         free(app);
     }
     history->futureCommands = NULL;
@@ -520,21 +543,17 @@ void backToTheFuture(t_history *history, t_text *text) {
 }
 
 void revertChange(t_command *command, t_text *text) {
-    t_data app;
 
-    // avoid editing of prevData pointer
-    app = command->prevData;
     // restore prev data
-    if (app.text == NULL && command->start == 1) {
-        free(text->lines);
-        createText(text);
+    if (command->prevData.text == NULL && command->start == 1) {
+        // create new empty text
+        createNewText(&text);
     } else {
-        rewriteText(text, app, command->start, command->end);
+        rewriteText(text, command->prevData, command->start, command->end);
     }
 
     // swap
-    command->prevData = command->data;
-    command->data = app;
+    swipeData(&(command->prevData), &(command->data));
     return;
 }
 
@@ -560,6 +579,14 @@ void createText(t_text *text) {
     text->numLines = 0;
     text->offset = OFFSET_TOLLERANCE;
     text->lines = malloc(sizeof(char *) * TEXT_BUFFER_SIZE);
+    return;
+}
+
+void createNewText(t_text **text)
+{
+    (*text)->numLines = 0;
+    (*text)->offset = OFFSET_TOLLERANCE;
+    (*text)->lines = malloc(sizeof(char *) * TEXT_BUFFER_SIZE);
     return;
 }
 
@@ -839,6 +866,15 @@ void printLine(char *line) {
         i++;
     }
     putchar('\n');
+}
+
+void swipeData(t_data *data1, t_data *data2)
+{
+    t_data app;
+    app = *data1;
+    *data1 = *data2;
+    *data2 = app;
+    return;
 }
 
 // ----- MAIN -----
