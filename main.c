@@ -105,7 +105,7 @@ void rewriteText(t_text *, t_data, int, int);
 
 void addTextInMiddle(t_text *, t_data, int, int);
 
-void deleteTextLines(t_text *, int, int);
+void deleteTextLines(t_text *, t_command *);
 
 void checkAndReallocText(t_text *, int);
 
@@ -119,9 +119,13 @@ void writeDataToText(t_text *, t_data, int);
 
 t_boolean isDataValidForWrite(t_text *, t_data, int);
 
-void shiftText(t_text *, int, int);
+void shiftText(t_text *, t_command *);
 
 void readAndWriteText(t_text *, t_command *);
+
+void shiftTextUp(t_text *, t_command *);
+
+void shiftTextDown(t_text *, t_command *);
 
 // utilities
 char *readLine();
@@ -366,9 +370,7 @@ void deleteCommand(t_command *command, t_text *text) {
     {
         return;
     }
-
-    command->prevData = readText(text, command->start, command->end);
-    deleteTextLines(text, command->start, command->end);
+    deleteTextLines(text, command);
     return;
 }
 
@@ -696,30 +698,38 @@ void readAndWriteText(t_text *text, t_command *command)
 }
 
 
-void deleteTextLines(t_text *text, int start, int end) {
-    int numLinesToDelete = end - start + 1;
+void deleteTextLines(t_text *text, t_command *command) {
+    int start = command->start;
+    int numLinesToDelete = 0;
+
+    // initialize data
+    command->prevData.text = NULL;
+    command->prevData.length = 0;
 
     // start cannot be greater than text num lines
     if (start > text->numLines)
         return;
 
+    // start cannot be less or equal than 0
+    if (start <= 0)
+        start = 1;
+
     // cannot delete a num lines lower or equal than 0
+    numLinesToDelete = command->end - start + 1;
     if (numLinesToDelete <= 0)
         return;
 
     // if end is bigger or equal text num lines
     // than simply decrease text num lines to overwrite them
-    if (end >= text->numLines) {
+    if (command->end >= text->numLines) {
+        // only save data
+        command->prevData = readText(text, command->start, text->numLines);
         text->numLines = start - 1;
         return;
     }
 
-    // start cannot be less or equal than 0
-    if (start <= 0)
-        start = 1;
-
     // shift lines
-    shiftText(text, start, end);
+    shiftText(text, command);
 
     // save new num lines
     text->numLines = text->numLines - numLinesToDelete;
@@ -793,34 +803,93 @@ void addTextInMiddle(t_text *text, t_data data, int start, int end) {
     return;
 }
 
-void shiftText(t_text *text, int start, int end) {
+void shiftTextDown(t_text *text, t_command *command) {
+    int numLinesToRead = command->end - command->start + 1;
+    int numLinesRead = 0;
+    int departure;
+    int arrive;
     int numLinesToShift;
+
+    // shift and read
+    for (int i = 0; i < numLinesToRead; i++) {
+        departure = command -> start - 2 - i + text->offset;
+        arrive = command -> end - 1 - i + text->offset;
+
+        // read prevData
+        command->prevData.text[numLinesToRead - 1 - i] = text->lines[arrive];
+        // overwrite lines from start to end
+        text->lines[arrive] = text->lines[departure];
+        numLinesRead++;
+    }
+    // only shift
+    numLinesToShift = command->start - numLinesRead - 1;
+    for (int i = 0; i < numLinesToShift; i++) {
+        departure = command->start - 2 - i + text->offset - numLinesRead;
+        arrive = command->end - 1 - i + text->offset - numLinesRead;
+        // overwrite lines from start to end
+        text->lines[arrive] = text->lines[departure];
+    }
+    text->offset += command->end - command->start + 1;
+
+    return;
+}
+
+void shiftTextUp(t_text *text, t_command *command) {
+    int numLinesToRead = command->end - command->start + 1;
+    int numLinesRead = 0;
+    int departure;
+    int arrive;
+    int numLinesToShift;
+
+    // shift and read
+    for (int i = 0; i < numLinesToRead; i++) {
+        departure = command -> end + i + text->offset;
+        arrive = command -> start + i - 1 + text->offset;
+
+        // read prevData
+        command->prevData.text[i] = text->lines[arrive];
+        // overwrite lines from start to end
+        text->lines[arrive] = text->lines[departure];
+        numLinesRead++;
+    }
+    // only shift
+    numLinesToShift = text->numLines - command -> end - numLinesRead;
+    for (int i = 0; i < numLinesToShift; i++) {
+        departure = command -> end + i + text->offset + numLinesRead;
+        arrive = command -> start + i - 1 + text->offset + numLinesRead;
+        // overwrite lines from start to end
+        text->lines[arrive] = text->lines[departure];
+    }
+
+    return;
+}
+
+void shiftText(t_text *text, t_command *command) {
     int middle;
+    int start = command -> start;
+    int end = command -> end;
+    int numLinesToRead = command->end - command->start + 1;
 
     // define middle element index in range
-    middle = start + (end - start + 1);
+    middle = start + ((end - start + 1) / 2);
 
     // special cases
     // start equal to 1 nothing to do, is enough to increase offset
     if (start == 1) {
+        // only save data
+        command->prevData = readText(text, command->start, command->end);
         text->offset += end;
         return;
     }
 
+    command->prevData.text = malloc(sizeof(char *) * numLinesToRead);
+    command->prevData.length = numLinesToRead;
+
     // check if middle is in first half or in the second
     if (middle < text->numLines / 2) {
-        numLinesToShift = start - 1;
-        for (int i = 0; i < numLinesToShift; i++) {
-            // overwrite lines from start to end
-            text->lines[end - 1 - i + text->offset] = text->lines[start - 2 - i + text->offset];
-        }
-        text->offset += end - start + 1;
+        shiftTextDown(text, command);
     } else {
-        numLinesToShift = text->numLines - end;
-        for (int i = 0; i < numLinesToShift; i++) {
-            // overwrite lines from start to end
-            text->lines[start + i - 1 + text->offset] = text->lines[end + i + text->offset];
-        }
+        shiftTextUp(text, command);
     }
     return;
 }
