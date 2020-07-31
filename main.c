@@ -105,6 +105,10 @@ void rewriteText(t_text *, t_data, int, int);
 
 void addTextInMiddle(t_text *, t_data, int, int);
 
+void addTextDown(t_text *, t_data, int, int);
+
+void addTextUp(t_text *, t_data, int, int);
+
 void deleteTextLines(t_text *, t_command *);
 
 void checkAndReallocText(t_text *, int);
@@ -786,12 +790,11 @@ void rewriteText(t_text *text, t_data data, int start, int end) {
 }
 
 void addTextInMiddle(t_text *text, t_data data, int start, int end) {
+
     // check data
     if (!isDataValidForWrite(text, data, start))
         return;
 
-    int newExtremeValue;
-    int numLinesToMove;
     int middle;
 
     // define middle element index in range
@@ -799,45 +802,90 @@ void addTextInMiddle(t_text *text, t_data data, int start, int end) {
 
     // check if middle is in first half or in the second
     if (middle < text->numLines / 2) {
-        // shift text
-        numLinesToMove = start - 1;
-        newExtremeValue = text->offset - data.length;
-        for (int i = 0; i < numLinesToMove; i++) {
-            // overwrite lines from start to end
-            text->lines[newExtremeValue + i] = text->lines[text->offset + i];
-        }
-        // shift and write text
-        numLinesToMove = data.length;
-        newExtremeValue = text->offset - data.length + start - 1;
-        for (int i = 0; i < numLinesToMove; i++) {
-            // overwrite lines from start to end
-            text->lines[newExtremeValue + i] = text->lines[start - 1 + i + text->offset];
-            // write new value
-            text->lines[start - 1 + i + text->offset] = data.text[i];
-        }
-        // update offset
-        text->offset -= data.length;
+        addTextDown(text, data, start, end);
     } else {
-        // shift text
-        numLinesToMove = text->numLines - end;
-        newExtremeValue = text->numLines + data.length;
-        for (int i = 0; i < numLinesToMove; i++) {
-            // overwrite lines from old to new end
-            text->lines[newExtremeValue - i - 1 + text->offset] = text->lines[text->numLines - i - 1 + text->offset];
-        }
-        // shift and write text
-        numLinesToMove = data.length;
-        newExtremeValue = text->numLines + data.length - (text->numLines - end) + text->offset - 1;
-        for (int i = 0; i < numLinesToMove; i++) {
-            // overwrite lines from start to end
-            text->lines[newExtremeValue + i] = text->lines[start - 1 + i + text->offset];
-            // write new value
-            text->lines[start - 1 + i + text->offset] = data.text[i];
-        }
+        addTextUp(text, data, start, end);
     }
 
     // save new num lines
     text->numLines = text->numLines + data.length;
+    return;
+}
+
+// addTextUp add text in first half by shift down text lines
+void addTextDown(t_text *text, t_data data, int start, int end) {
+    int numLinesToMove;
+    int linesShifted;
+    int oldValueStart;
+    int newValueStart;
+
+    // define num lines to move
+    numLinesToMove = start - 1;
+    // define constant position offset
+    oldValueStart = text->offset - data.length;
+    newValueStart = text->offset;
+    // initialize coutner
+    linesShifted = 0;
+    // move text
+    for (int i = 0; i < numLinesToMove; i++) {
+        // overwrite lines from start to end
+        text->lines[oldValueStart + i] = text->lines[newValueStart + i];
+        // increase counter
+        linesShifted++;
+    }
+
+    // define num lines to move
+    numLinesToMove = data.length;
+    // change offset by added num lines already shifted
+    oldValueStart += linesShifted;
+    newValueStart += linesShifted;
+    // shift and write text
+    for (int i = 0; i < numLinesToMove; i++) {
+        // overwrite lines from start to end
+        text->lines[oldValueStart + i] = text->lines[newValueStart + i];
+        // write new value
+        text->lines[newValueStart + i] = data.text[i];
+    }
+    // update text offset
+    text->offset -= data.length;
+
+    return;
+}
+
+// addTextDown add text in second half by shift up text lines
+void addTextUp(t_text *text, t_data data, int start, int end) {
+    int numLinesToMove;
+    int linesShifted;
+    int oldValueStart;
+    int newValueStart;
+
+    // define num lines to move
+    numLinesToMove = text->numLines - end;
+    // define constant position offset
+    oldValueStart = text->numLines + data.length + text->offset - 1;
+    newValueStart = text->numLines + text->offset - 1;
+    // initialize coutner
+    linesShifted = 0;
+    // shift text
+    for (int i = 0; i < numLinesToMove; i++) {
+        // overwrite lines from old to new end
+        text->lines[oldValueStart - i] = text->lines[newValueStart - i];
+        // increase counter
+        linesShifted++;
+    }
+
+    // define num lines to move
+    numLinesToMove = data.length;
+    // change offset by added num lines already shifted
+    oldValueStart -= linesShifted;
+    newValueStart -=  linesShifted;
+    // shift and write text
+    for (int i = 0; i < numLinesToMove; i++) {
+        // overwrite lines from start to end
+        text->lines[oldValueStart - i] = text->lines[newValueStart - i];
+        // write new value
+        text->lines[newValueStart - i] = data.text[data.length - 1 - i];
+    }
     return;
 }
 
