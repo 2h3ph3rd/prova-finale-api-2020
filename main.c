@@ -25,6 +25,7 @@ typedef struct command {
     t_data data;
     t_data prevData;
     struct command *next;
+    t_boolean deleteWorks;
 } t_command;
 
 typedef struct text {
@@ -169,6 +170,8 @@ t_command *readCommand() {
     // initialize prevData
     command->prevData.text = NULL;
     command->prevData.length = 0;
+    // initialize values
+    command->deleteWorks = true;
 
     return command;
 }
@@ -370,7 +373,12 @@ void deleteCommand(t_command *command, t_text *text) {
     // start cannot be greater than last line
     if(command -> start > text -> numLines)
     {
+        command->deleteWorks = false;
         return;
+    }
+    if(command -> end > text -> numLines)
+    {
+        command -> end = text -> numLines;
     }
     deleteTextLines(text, command);
     return;
@@ -508,7 +516,7 @@ void backToThePast(t_history *history, t_text *text) {
     }
         // delete command to redo
     else if (command->type == 'd') {
-        if (command->prevData.text != NULL)
+        if (command->prevData.text != NULL && command->deleteWorks)
             addTextInMiddle(text, command->prevData, command->start, command->end);
     }
     #ifdef DEBUG
@@ -534,9 +542,10 @@ void backToTheFuture(t_history *history, t_text *text) {
     if (command->type == 'c') {
         revertChange(command, text);
     }
-        // delete command to redo
+    // delete command to redo
     else if (command->type == 'd') {
-        deleteCommand(command, text);
+        if(command->deleteWorks)
+            deleteCommand(command, text);
     }
     #ifdef DEBUG
     else
