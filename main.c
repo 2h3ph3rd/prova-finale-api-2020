@@ -109,8 +109,6 @@ void deleteTextLines(t_text *, t_command *);
 
 void checkAndReallocText(t_text *, int);
 
-void createSpaceInMiddleText(t_text *, int, int);
-
 t_boolean checkIfExceedBufferSize(int, int);
 
 void allocateBiggerTextArea(t_text *, int);
@@ -792,11 +790,51 @@ void addTextInMiddle(t_text *text, t_data data, int start, int end) {
     if (!isDataValidForWrite(text, data, start))
         return;
 
-    // create space
-    createSpaceInMiddleText(text, start, data.length);
+    int newExtremeValue;
+    int numLinesToMove;
+    int middle;
 
-    // write lines
-    writeDataToText(text, data, start);
+    // define middle element index in range
+    middle = start + data.length / 2;
+
+    // check if middle is in first half or in the second
+    if (middle < text->numLines / 2) {
+        // shift text
+        numLinesToMove = start - 1;
+        newExtremeValue = text->offset - data.length;
+        for (int i = 0; i < numLinesToMove; i++) {
+            // overwrite lines from start to end
+            text->lines[newExtremeValue + i] = text->lines[text->offset + i];
+        }
+        // shift and write text
+        numLinesToMove = data.length;
+        newExtremeValue = text->offset - data.length + start - 1;
+        for (int i = 0; i < numLinesToMove; i++) {
+            // overwrite lines from start to end
+            text->lines[newExtremeValue + i] = text->lines[start - 1 + i + text->offset];
+            // write new value
+            text->lines[start - 1 + i + text->offset] = data.text[i];
+        }
+        // update offset
+        text->offset -= data.length;
+    } else {
+        // shift text
+        numLinesToMove = text->numLines - end;
+        newExtremeValue = text->numLines + data.length;
+        for (int i = 0; i < numLinesToMove; i++) {
+            // overwrite lines from old to new end
+            text->lines[newExtremeValue - i - 1 + text->offset] = text->lines[text->numLines - i - 1 + text->offset];
+        }
+        // shift and write text
+        numLinesToMove = data.length;
+        newExtremeValue = text->numLines + data.length - (text->numLines - end) + text->offset - 1;
+        for (int i = 0; i < numLinesToMove; i++) {
+            // overwrite lines from start to end
+            text->lines[newExtremeValue + i] = text->lines[start - 1 + i + text->offset];
+            // write new value
+            text->lines[start - 1 + i + text->offset] = data.text[i];
+        }
+    }
 
     // save new num lines
     text->numLines = text->numLines + data.length;
@@ -913,37 +951,6 @@ void checkAndReallocText(t_text *text, int newLastLine) {
         // reallocate a new area with a more buffer size
         allocateBiggerTextArea(text, newLastLine);
     }
-}
-
-// createSpaceInMiddleText: move text lines to create space
-void createSpaceInMiddleText(t_text *text, int start, int dataLength) {
-    int newExtremeValue;
-    int numLinesToMove;
-    int middle;
-
-    // define middle element index in range
-    middle = start + dataLength / 2;
-
-    // check if middle is in first half or in the second
-    if (middle < text->numLines / 2) {
-        numLinesToMove = start + dataLength - 1;
-        newExtremeValue = text->offset - dataLength;
-        // newExtremeValue = text -> offset + data.length;
-        for (int i = 0; i < numLinesToMove; i++) {
-            // overwrite lines from start to end
-            text->lines[newExtremeValue + i] = text->lines[text->offset + i];
-        }
-        text->offset -= dataLength;
-    } else {
-        numLinesToMove = text->numLines - start + 1;
-        newExtremeValue = text->numLines + dataLength;
-        for (int i = 0; i < numLinesToMove; i++) {
-            // overwrite lines from old to new end
-            text->lines[newExtremeValue - i - 1 + text->offset] = text->lines[text->numLines - i - 1 + text->offset];
-        }
-    }
-
-    return;
 }
 
 void writeDataToText(t_text *text, t_data data, int start) {
