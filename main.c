@@ -62,7 +62,7 @@ t_data getEmptyDataStruct();
 // execute command
 void executeCommand(t_command *, t_text *, t_history *);
 
-void printCommand(t_command, t_text *);
+void printCommand(t_command *, t_text *);
 
 void changeCommand(t_command *, t_text *);
 
@@ -96,39 +96,15 @@ void returnToStart(t_text *, t_history *);
 // text manager
 void createText(t_text *);
 
-void createNewText(t_text **);
+void printText(t_text *, int, int);
 
-t_data readText(t_text *, int, int);
+t_data changeText(t_text *, t_data, int);
 
-void writeText(t_text *, t_data *, int, int);
+t_data deleteText(t_text *, int, int);
 
-void rewriteText(t_text *, t_data, int, int);
+void revertDeleteText(t_text *, int, int);
 
-void addTextInMiddle(t_text *, t_data, int, int);
-
-void addTextDown(t_text *, t_data, int, int);
-
-void addTextUp(t_text *, t_data, int, int);
-
-void deleteTextLines(t_text *, t_command *);
-
-void checkAndReallocText(t_text *, int);
-
-t_boolean checkIfExceedBufferSize(int, int);
-
-void allocateBiggerTextArea(t_text *, int);
-
-void writeDataToText(t_text *, t_data, int);
-
-t_boolean isDataValidForWrite(t_text *, t_data, int);
-
-void shiftText(t_text *, t_command *);
-
-void readAndWriteText(t_text *, t_command *);
-
-void shiftTextUp(t_text *, t_command *);
-
-void shiftTextDown(t_text *, t_command *);
+int getStartWithOffset(t_text *, int);
 
 // utilities
 char *readLine();
@@ -289,7 +265,7 @@ void executeCommand(t_command *command, t_text *text, t_history *history) {
     }
     switch (command->type) {
         case 'p':
-            printCommand(*command, text);
+            printCommand(command, text);
             break;
         case 'c':
             changeCommand(command, text);
@@ -324,31 +300,25 @@ void executeCommand(t_command *command, t_text *text, t_history *history) {
     }
 }
 
-void printCommand(t_command command, t_text *text) {
-    int numTextLinesToPrint = 0;
-    t_data data;
-    if (command.start == 0) {
+void printCommand(t_command *command, t_text *text) {
+    // if start is zero, print a line with a dot and continue
+    if (command->start == 0) {
         printf(".\n");
-        command.start = 1;
+        command->start = 1;
     }
-    // check if start is in text
-    if (command.start > text->numLines) {
-        for (int i = command.start; i < command.end + 1; i++)
+    // check if start is in text, otherwise online lines with dot
+    if (command->start > text->numLines) {
+        for (int i = command->start; i < command->end + 1; i++)
             printf(".\n");
     } else {
         // check for overflow
-        if (command.end > text->numLines) {
-            numTextLinesToPrint = text->numLines - command.start + 1;
+        if (command->end < text->numLines) {
+            printText(text, command->start, command->end);
         } else {
-            numTextLinesToPrint = command.end - command.start + 1;
+            printText(text, command->start, text->numLines);
+            for (int i = text->numLines; i < command->end; i++)
+                printf(".\n");
         }
-
-        for (int i = 0; i < numTextLinesToPrint; i++)
-            printf("%s\n", text->lines[command.start - 1 + i + text->offset]);
-
-        for (int i = text->numLines; i < command.end; i++)
-            printf(".\n");
-
     }
 }
 
@@ -361,7 +331,7 @@ void changeCommand(t_command *command, t_text *text) {
     // if(command -> start > text -> numLines + 1)
     //    return;
 
-    readAndWriteText(text, command);
+    command->prevData = changeText(text, command->data, command->start);
     return;
 }
 
@@ -370,7 +340,7 @@ void deleteCommand(t_command *command, t_text *text) {
     if (command->start <= 0) {
         command->start = 1;
     }
-    // start cannot be greater than last line
+    // start cannot be greater than num lines
     if(command -> start > text -> numLines)
     {
         command->deleteWorks = false;
@@ -380,20 +350,7 @@ void deleteCommand(t_command *command, t_text *text) {
     {
         command -> end = text -> numLines;
     }
-    deleteTextLines(text, command);
-    return;
-}
-
-void returnToStart(t_text *text, t_history *history)
-{
-    // move commands to futureStack
-    for (int i = 0; i < history->commandsToTravel; i++) {
-        swipeData(&(history->pastCommands->data), &(history->pastCommands->prevData));
-        swipeEventStack(history->pastCommands, &history->pastCommands, &history->futureCommands);
-    }
-    // create new empty text
-    createNewText(&text);
-    history->commandsToTravel = 0;
+    command->prevData = deleteText(text, command->start, command->end);
     return;
 }
 
@@ -516,8 +473,8 @@ void backToThePast(t_history *history, t_text *text) {
     }
         // delete command to redo
     else if (command->type == 'd') {
-        if (command->prevData.text != NULL && command->deleteWorks)
-            addTextInMiddle(text, command->prevData, command->start, command->end);
+        if (command->deleteWorks)
+            revertDeleteText(text, command->start, command->end);
     }
     #ifdef DEBUG
     else
@@ -564,9 +521,10 @@ void revertChange(t_command *command, t_text *text) {
     // restore prev data
     if (command->prevData.text == NULL && command->start == 1) {
         // create new empty text
-        createNewText(&text);
+        free(text->lines);
+        createText(text);
     } else {
-        rewriteText(text, command->prevData, command->start, command->end);
+        changeText(text, command->prevData, command->start);
     }
 
     // swap
@@ -589,6 +547,19 @@ void swipeEventStack(t_command *command, t_command **old, t_command **new) {
     return;
 }
 
+void returnToStart(t_text *text, t_history *history)
+{
+    // move commands to futureStack
+    for (int i = 0; i < history->commandsToTravel; i++) {
+        swipeData(&(history->pastCommands->data), &(history->pastCommands->prevData));
+        swipeEventStack(history->pastCommands, &history->pastCommands, &history->futureCommands);
+    }
+    // create new empty text
+    free(text->lines);
+    createText(text);
+    history->commandsToTravel = 0;
+    return;
+}
 
 // ----- TEXT MANAGER -----
 
@@ -599,437 +570,22 @@ void createText(t_text *text) {
     return;
 }
 
-void createNewText(t_text **text)
-{
-    (*text)->numLines = 0;
-    (*text)->offset = OFFSET_TOLLERANCE;
-    free((*text)->lines);
-    (*text)->lines = malloc(sizeof(char *) * TEXT_BUFFER_SIZE);
-    return;
+void printText(t_text *text, int start, int end) {
+
 }
 
-t_data readText(t_text *text, int start, int end) {
-    t_data data;
-    int numLinesToRead;
+t_data changeText(t_text *text, t_data data, int start) {
 
-    data.text = NULL;
-    data.length = 0;
-
-    // end cannot be greater then numLines
-    if (end > text->numLines)
-        end = text->numLines;
-
-    numLinesToRead = end - start + 1;
-
-    // check if start not exceed numLines, otherwise no data to read
-    if (start > text->numLines)
-        return data;
-
-    // check if end not exceed numLines, otherwise end must be decrease to it
-    if (end > text->numLines)
-        end = text->numLines;
-
-    // allocate an array of strings
-    // 1,3c -> 3 - 1 + 1 = 3 lines to write
-    data.text = malloc(sizeof(char *) * numLinesToRead);
-
-    // read lines
-    for (int i = 0; i < numLinesToRead; i++) {
-        data.text[i] = text->lines[start + i - 1 + text->offset];
-    }
-
-    // set text length
-    data.length = numLinesToRead;
-
-    return data;
 }
 
-void readAndWriteText(t_text *text, t_command *command)
-{
-    int end = command->end;
-    int numLinesToRead = 0;
-    int numLinesToAppend = 0;
-    int numCurrLine = 0;
-    int numLinesWritten = 0;
-
-    command->prevData.text = NULL;
-    command->prevData.length = 0;
-
-    // check data
-    if (!isDataValidForWrite(text, command->data, command->start))
-        return;
-
-    // start cannot be less or equal than 0
-    // if (command->start <= 0)
-    //     command->start = 1;
-
-    // check if end not exceed numLines, otherwise end must be decrease to it
-    if (end > text->numLines)
-        end = text->numLines;
-
-    // allocate an array of strings
-    // 1,3c -> 3 - 1 + 1 = 3 lines to write
-    numLinesToRead = end - command->start + 1;
-
-    if(numLinesToRead > 0)
-    {
-        command->prevData.text = malloc(sizeof(char *) * numLinesToRead);
-
-        // read and write lines
-        for (int i = 0; i < numLinesToRead; i++) {
-            numCurrLine = command->start + i - 1 + text->offset;
-            // save prevData
-            command->prevData.text[i] = text->lines[numCurrLine];
-            // update text
-            text->lines[numCurrLine] = command->data.text[i];
-            numLinesWritten++;
-        }
-    }
-
-    // write append lines
-    numLinesToAppend = command->data.length - numLinesToRead;
-    for (int i = 0; i < numLinesToAppend; i++) {
-        numCurrLine = command->start + i - 1 + text->offset + numLinesWritten;
-        // update text
-        text->lines[numCurrLine] = command->data.text[i + numLinesWritten];
-    }
-
-    // set prev data text length
-    command->prevData.length = numLinesToRead;
-
-    // check if this write append new text
-    if (command->end > text->numLines) {
-        // check for reallocation
-        // checkAndReallocText(text, end);
-        // update text num lines
-        text->numLines = command->end;
-    }
-
-    return;
+t_data deleteText(t_text *text, int start, int end) {
 }
 
-
-void deleteTextLines(t_text *text, t_command *command) {
-    int start = command->start;
-    int numLinesToDelete = 0;
-
-    // initialize data
-    command->prevData.text = NULL;
-    command->prevData.length = 0;
-
-    // start cannot be greater than text num lines
-    if (start > text->numLines)
-        return;
-
-    // start cannot be less or equal than 0
-    if (start <= 0)
-        start = 1;
-
-    // cannot delete a num lines lower or equal than 0
-    numLinesToDelete = command->end - start + 1;
-    if (numLinesToDelete <= 0)
-        return;
-
-    // if end is bigger or equal text num lines
-    // than simply decrease text num lines to overwrite them
-    if (command->end >= text->numLines) {
-        // only save data
-        command->prevData = readText(text, command->start, text->numLines);
-        text->numLines = start - 1;
-        return;
-    }
-
-    // shift lines
-    shiftText(text, command);
-
-    // save new num lines
-    text->numLines = text->numLines - numLinesToDelete;
-
-    return;
+void revertDeleteText(t_text *text, int start, int end) {
 }
 
-void writeText(t_text *text, t_data *data, int start, int end) {
-    // check data
-    if (!isDataValidForWrite(text, *data, start))
-        return;
+int getStartWithOffset(t_text *text, int start) {
 
-    // start cannot be less or equal than 0
-    if (start <= 0)
-        start = 1;
-
-    // check if this write will append new text
-    if (end > text->numLines) {
-        // check for reallocation
-        // checkAndReallocText(text, end);
-        // update text num lines
-        text->numLines = end;
-    }
-
-    // write lines
-    writeDataToText(text, *data, start);
-
-    return;
-}
-
-void rewriteText(t_text *text, t_data data, int start, int end) {
-    // check data
-    if (!isDataValidForWrite(text, data, start))
-        return;
-
-    // start cannot be less or equal than 0
-    if (start <= 0)
-        start = 1;
-
-    // check if this write will append new text
-    if (end > text->numLines) {
-        // check for reallocation
-        // checkAndReallocText(text, end);
-        // update text num lines
-        text->numLines = end;
-    }
-        // check if this command added new lines before
-    else if (end == text->numLines && data.length < end - start + 1) {
-        text->numLines -= end - data.length;
-    }
-
-    // write lines
-    writeDataToText(text, data, start);
-
-    return;
-}
-
-void addTextInMiddle(t_text *text, t_data data, int start, int end) {
-
-    // check data
-    if (!isDataValidForWrite(text, data, start))
-        return;
-
-    int middle;
-
-    // define middle element index in range
-    middle = start + data.length / 2;
-
-    // check if middle is in first half or in the second
-    if (middle < text->numLines / 2) {
-        addTextDown(text, data, start, end);
-    } else {
-        addTextUp(text, data, start, end);
-    }
-
-    // save new num lines
-    text->numLines = text->numLines + data.length;
-    return;
-}
-
-// addTextUp add text in first half by shift down text lines
-void addTextDown(t_text *text, t_data data, int start, int end) {
-    int numLinesToMove;
-    int linesShifted;
-    int oldValueStart;
-    int newValueStart;
-
-    // define num lines to move
-    numLinesToMove = start - 1;
-    // define constant position offset
-    oldValueStart = text->offset - data.length;
-    newValueStart = text->offset;
-    // initialize coutner
-    linesShifted = 0;
-    // move text
-    for (int i = 0; i < numLinesToMove; i++) {
-        // overwrite lines from start to end
-        text->lines[oldValueStart + i] = text->lines[newValueStart + i];
-        // increase counter
-        linesShifted++;
-    }
-
-    // define num lines to move
-    numLinesToMove = data.length;
-    // change offset by added num lines already shifted
-    oldValueStart += linesShifted;
-    newValueStart += linesShifted;
-    // shift and write text
-    for (int i = 0; i < numLinesToMove; i++) {
-        // overwrite lines from start to end
-        text->lines[oldValueStart + i] = text->lines[newValueStart + i];
-        // write new value
-        text->lines[newValueStart + i] = data.text[i];
-    }
-    // update text offset
-    text->offset -= data.length;
-
-    return;
-}
-
-// addTextDown add text in second half by shift up text lines
-void addTextUp(t_text *text, t_data data, int start, int end) {
-    int numLinesToMove;
-    int linesShifted;
-    int oldValueStart;
-    int newValueStart;
-
-    // define num lines to move
-    numLinesToMove = text->numLines - end;
-    // define constant position offset
-    oldValueStart = text->numLines + data.length + text->offset - 1;
-    newValueStart = text->numLines + text->offset - 1;
-    // initialize coutner
-    linesShifted = 0;
-    // shift text
-    for (int i = 0; i < numLinesToMove; i++) {
-        // overwrite lines from old to new end
-        text->lines[oldValueStart - i] = text->lines[newValueStart - i];
-        // increase counter
-        linesShifted++;
-    }
-
-    // define num lines to move
-    numLinesToMove = data.length;
-    // change offset by added num lines already shifted
-    oldValueStart -= linesShifted;
-    newValueStart -=  linesShifted;
-    // shift and write text
-    for (int i = 0; i < numLinesToMove; i++) {
-        // overwrite lines from start to end
-        text->lines[oldValueStart - i] = text->lines[newValueStart - i];
-        // write new value
-        text->lines[newValueStart - i] = data.text[data.length - 1 - i];
-    }
-    return;
-}
-
-void shiftTextDown(t_text *text, t_command *command) {
-    int numLinesToRead = command->end - command->start + 1;
-    int numLinesRead = 0;
-    int departure;
-    int arrive;
-    int numLinesToShift;
-
-    // shift and read
-    for (int i = 0; i < numLinesToRead; i++) {
-        departure = command -> start - 2 - i + text->offset;
-        arrive = command -> end - 1 - i + text->offset;
-
-        // read prevData
-        command->prevData.text[numLinesToRead - 1 - i] = text->lines[arrive];
-        // overwrite lines from start to end
-        text->lines[arrive] = text->lines[departure];
-        numLinesRead++;
-    }
-    // only shift
-    numLinesToShift = command->start - numLinesRead - 1;
-    for (int i = 0; i < numLinesToShift; i++) {
-        departure = command->start - 2 - i + text->offset - numLinesRead;
-        arrive = command->end - 1 - i + text->offset - numLinesRead;
-        // overwrite lines from start to end
-        text->lines[arrive] = text->lines[departure];
-    }
-    text->offset += command->end - command->start + 1;
-
-    return;
-}
-
-void shiftTextUp(t_text *text, t_command *command) {
-    int numLinesToRead = command->end - command->start + 1;
-    int numLinesRead = 0;
-    int departure;
-    int arrive;
-    int numLinesToShift;
-
-    // shift and read
-    for (int i = 0; i < numLinesToRead; i++) {
-        departure = command -> end + i + text->offset;
-        arrive = command -> start + i - 1 + text->offset;
-
-        // read prevData
-        command->prevData.text[i] = text->lines[arrive];
-        // overwrite lines from start to end
-        text->lines[arrive] = text->lines[departure];
-        numLinesRead++;
-    }
-    // only shift
-    numLinesToShift = text->numLines - command -> end - numLinesRead;
-    for (int i = 0; i < numLinesToShift; i++) {
-        departure = command -> end + i + text->offset + numLinesRead;
-        arrive = command -> start + i - 1 + text->offset + numLinesRead;
-        // overwrite lines from start to end
-        text->lines[arrive] = text->lines[departure];
-    }
-
-    return;
-}
-
-void shiftText(t_text *text, t_command *command) {
-    int middle;
-    int start = command -> start;
-    int end = command -> end;
-    int numLinesToRead = command->end - command->start + 1;
-
-    // define middle element index in range
-    middle = start + ((end - start + 1) / 2);
-
-    // special cases
-    // start equal to 1 nothing to do, is enough to increase offset
-    if (start == 1) {
-        // only save data
-        command->prevData = readText(text, command->start, command->end);
-        text->offset += end;
-        return;
-    }
-
-    command->prevData.text = malloc(sizeof(char *) * numLinesToRead);
-    command->prevData.length = numLinesToRead;
-
-    // check if middle is in first half or in the second
-    if (middle < text->numLines / 2) {
-        shiftTextDown(text, command);
-    } else {
-        shiftTextUp(text, command);
-    }
-    return;
-}
-
-t_boolean isDataValidForWrite(t_text *text, t_data data, int start) {
-    // start cannot be greater than text num lines
-    if (start > text->numLines + 1)
-        return false;
-
-    // cannot have a num lines lower or equal than 0
-    if (data.length <= 0)
-        return false;
-
-    return true;
-}
-
-// checkAndReallocText: check if exceed allocated memory, than realloc
-void checkAndReallocText(t_text *text, int newLastLine) {
-    // check if exceed allocated memory, otherwise realloc
-    if (checkIfExceedBufferSize(text->numLines + text->offset, newLastLine + text->offset)) {
-        // reallocate a new area with a more buffer size
-        allocateBiggerTextArea(text, newLastLine);
-    }
-}
-
-void writeDataToText(t_text *text, t_data data, int start) {
-    int numCurrLine;
-    for (int i = 0; i < data.length; i++) {
-        numCurrLine = start + i - 1 + text->offset;
-        text->lines[numCurrLine] = data.text[i];
-    }
-    return;
-}
-
-t_boolean checkIfExceedBufferSize(int currLinesAllocated, int newNumLinesAllocated) {
-    return ((newNumLinesAllocated / TEXT_BUFFER_SIZE) > (currLinesAllocated / TEXT_BUFFER_SIZE + 1));
-}
-
-void allocateBiggerTextArea(t_text *actualText, int newLastLine) {
-    int buffersToAllocate = (newLastLine + actualText->offset) / TEXT_BUFFER_SIZE + 1;
-    actualText->lines = realloc(actualText->lines, sizeof(char *) * buffersToAllocate * TEXT_BUFFER_SIZE);
-    // check for realloc errors
-    if (actualText->lines == NULL) {
-        abort();
-    }
 }
 
 // ----- UTILITIES FUNCTIONS -----
