@@ -637,6 +637,42 @@ t_data changeText(t_text *text, t_data data, int start) {
 }
 
 t_data deleteText(t_text *text, int start, int end) {
+
+    t_data prevData;
+    int startOffset = 0;
+    int currLine = 0;
+    int numLinesToShift = text->numLines - start + 1;
+    int newNumLines = text->numLines - (end - start + 1);
+
+    // initialize prevData to allocate all actual text
+    prevData.length = text->numLines;
+    prevData.text = malloc(sizeof(char *) * prevData.length);
+
+    // save first part of text
+    for(int i = 0; i < start - 1; i++) {
+        // save line
+        prevData.text[i] = text->lines[i];
+    }
+
+    // delete line by shift up text
+    startOffset = start - 1;
+    for(int i = 0; i < numLinesToShift; i++) {
+        currLine = startOffset + i;
+        // save line
+        prevData.text[currLine] = text->lines[currLine];
+        // shift text
+        text->lines[currLine] = text->lines[end + i];
+    }
+
+    for(int i = newNumLines; i < text->numLines; i++) {
+        // save line
+        prevData.text[i] = text->lines[i];
+    }
+
+    // update num lines
+    text->numLines = newNumLines;
+
+    return prevData;
 }
 
 void revertDeleteText(t_text *text, int start, int end) {
