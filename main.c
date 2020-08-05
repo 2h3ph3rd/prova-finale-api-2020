@@ -396,6 +396,8 @@ void forgetFuture(t_history *history) {
     while (command != NULL) {
         app = command;
         command = command->next;
+        free(app->data.lines);
+        free(app->prevData.lines);
         free(app);
     }
     history->futureCommands = NULL;
@@ -618,7 +620,12 @@ void deleteText(t_text *text, t_command *command) {
 
 t_text revertDeleteText(t_text *text, t_text oldText) {
     t_text actualText;
-    actualText = *text;
+
+    // save actual text
+    actualText.buffersAllocated = text->buffersAllocated;
+    actualText.lines = text->lines;
+    actualText.numLines = text->numLines;
+
     // write old text
     text->buffersAllocated = oldText.buffersAllocated;
     text->lines = oldText.lines;
@@ -712,7 +719,7 @@ char *readLine() {
     line[i] = '\0';
     i++;
 
-    line = realloc(line, sizeof(char) * (i + 1));
+    line = realloc(line, sizeof(char) * i);
 
     return line;
 }
