@@ -4,8 +4,7 @@
 // #define DEBUG
 #define MAX_LINE_LENGTH 1024
 #define HISTORY_BUFFER_SIZE 100
-#define TEXT_BUFFER_SIZE 100000
-#define OFFSET_TOLLERANCE 1000
+#define TEXT_BUFFER_SIZE 1000000
 
 // ----- TYPES -----
 
@@ -31,7 +30,6 @@ typedef struct command {
 typedef struct text {
     char **lines;
     int numLines;
-    int offset;
 } t_text;
 
 typedef struct history {
@@ -565,17 +563,77 @@ void returnToStart(t_text *text, t_history *history)
 
 void createText(t_text *text) {
     text->numLines = 0;
-    text->offset = OFFSET_TOLLERANCE;
     text->lines = malloc(sizeof(char *) * TEXT_BUFFER_SIZE);
     return;
 }
 
 void printText(t_text *text, int start, int end) {
+    int numLinesToPrint = end - start + 1;
+    int startOffset = start - 1;
 
+    for(int i = 0; i < numLinesToPrint; i++) {
+        printf("%s\n", text->lines[startOffset + i]);
+    }
+
+    return;
+}
+
+t_data readAndOverwriteText(t_text *text, t_data data, int start, int end) {
+    int startOffset = start - 1;
+    int numLinesToWrite = 0;
+    int currNumLine = 0;
+    t_data prevData;
+
+    // check for overflow
+    if(end > text->numLines) {
+        numLinesToWrite = text->numLines - start + 1;
+    } else {
+        numLinesToWrite = end - start + 1;
+    }
+
+    prevData.length = numLinesToWrite;
+    prevData.text = malloc(sizeof(char *) * prevData.length);
+
+    for(int i = 0; i < numLinesToWrite; i++) {
+        currNumLine = startOffset + i;
+        prevData.text[i] = text->lines[currNumLine];
+        text->lines[currNumLine] = data.text[i];
+    }
+
+    return prevData;
+}
+
+void appendText(t_text *text, t_data data, int numLinesAlreadyWritten) {
+    int numLinesToWrite = data.length - numLinesAlreadyWritten;
+    int startOffset = text->numLines;
+
+    for(int i = 0; i < numLinesToWrite; i++) {
+        text->lines[startOffset + i] = data.text[numLinesAlreadyWritten + i];
+        text->numLines++;
+    }
+
+    return;
 }
 
 t_data changeText(t_text *text, t_data data, int start) {
+    t_data prevData;
+    int end = start + data.length - 1;
 
+    prevData.length = 0;
+    prevData.text = NULL;
+
+    if(start > text->numLines) {
+        appendText(text, data, 0);
+    } else {
+        if(end <= text->numLines) {
+            prevData = readAndOverwriteText(text, data, start, end);
+        } else {
+            prevData = readAndOverwriteText(text, data, start, text->numLines);
+            appendText(text, data, text->numLines - start + 1);
+        }
+    }
+
+    return prevData;
 }
 
 t_data deleteText(t_text *text, int start, int end) {
