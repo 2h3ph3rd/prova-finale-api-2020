@@ -60,9 +60,9 @@ void changeCommand(t_command *, t_text *);
 
 void deleteCommand(t_command *, t_text *);
 
-void undoCommand(t_text *, t_history *);
+void undoCommand(t_command *, t_text *, t_history *);
 
-void redoCommand(t_text *, t_history *);
+void redoCommand(t_command *, t_text *, t_history *);
 
 // update history
 void createHistory(t_history *);
@@ -79,6 +79,8 @@ void backToTheFuture(t_history *history, t_text *text);
 
 void backToThePast(t_history *history, t_text *text);
 
+void revertCommand(t_command *, t_text *);
+
 void revertChange(t_command *command, t_text *text);
 
 void swipeEventStack(t_command *, t_command **, t_command **);
@@ -94,7 +96,7 @@ t_text changeText(t_text *, t_text, int);
 
 void deleteText(t_text *, t_command *);
 
-void revertDeleteText(t_text *, t_text);
+t_text revertDeleteText(t_text *, t_text);
 
 int getStartWithOffset(t_text *, int);
 
@@ -151,7 +153,6 @@ t_command *readCommand() {
     command->prevData = getEmptyTextStruct();
     // initialize values
     command->deleteWorks = true;
-
     return command;
 }
 
@@ -250,9 +251,9 @@ void readCommandStartAndEnd(t_command *command, char *line) {
 void executeCommand(t_command *command, t_text *text, t_history *history) {
     if (history->timeTravelMode == true && command->type != 'r' && command->type != 'u') {
         if (history->commandsToTravel < 0) {
-            undoCommand(text, history);
+            backToThePast(history, text);
         } else if (history->commandsToTravel > 0) {
-            redoCommand(text, history);
+            backToTheFuture(history, text);
         }
         // otherwise nothing to do
     }
@@ -267,23 +268,10 @@ void executeCommand(t_command *command, t_text *text, t_history *history) {
             deleteCommand(command, text);
             break;
         case 'u':
-            if (command->start > history->numPastCommands) {
-                command->start = history->numPastCommands;
-            }
-            history->commandsToTravel -= command->start;
-            history->numPastCommands -= command->start;
-            history->numFutureCommands += command->start;
-            history->timeTravelMode = true;
+            undoCommand(command, text, history);
             break;
         case 'r':
-            if (history->timeTravelMode = true) {
-                if (command->start > history->numFutureCommands) {
-                    command->start = history->numFutureCommands;
-                }
-                history->commandsToTravel += command->start;
-                history->numPastCommands += command->start;
-                history->numFutureCommands -= command->start;
-            }
+            redoCommand(command, text, history);
             break;
         #ifdef DEBUG
             default:
@@ -347,33 +335,26 @@ void deleteCommand(t_command *command, t_text *text) {
     return;
 }
 
-void undoCommand(t_text *text, t_history *history) {
-    // set as positive value
-    history->commandsToTravel *= -1;
-
-    // if after undo remain no commands, so simple go back to the start
-    if(history->numPastCommands == 0) {
-        returnToStart(text, history);
-        return;
+void undoCommand(t_command *command, t_text *text, t_history *history) {
+    if (command->start > history->numPastCommands) {
+        command->start = history->numPastCommands;
     }
-
-    // undo commands in stack
-    for (int i = 0; i < history->commandsToTravel; i++) {
-
-        backToThePast(history, text);
-    }
-    history->commandsToTravel = 0;
+    history->commandsToTravel -= command->start;
+    history->numPastCommands -= command->start;
+    history->numFutureCommands += command->start;
+    history->timeTravelMode = true;
     return;
 }
 
-void redoCommand(t_text *text, t_history *history) {
-
-    // redo commands in stack
-    for (int i = 0; i < history->commandsToTravel; i++) {
-        backToTheFuture(history, text);
+void redoCommand(t_command *command, t_text *text, t_history *history) {
+    if (history->timeTravelMode == true) {
+        if (command->start > history->numFutureCommands) {
+            command->start = history->numFutureCommands;
+        }
+        history->commandsToTravel += command->start;
+        history->numPastCommands += command->start;
+        history->numFutureCommands -= command->start;
     }
-
-    history->commandsToTravel = 0;
     return;
 }
 
@@ -441,47 +422,56 @@ void backToThePast(t_history *history, t_text *text) {
     t_command *command, *app;
     char **strApp;
 
-    // no commands to do
-    // if(history -> pastCommands == NULL)
-    //     return;
+    history->commandsToTravel *= -1;
 
-    command = history->pastCommands;
-    // change command to redo
-    if (command->type == 'c') {
-        revertChange(command, text);
+    // if after undo remain no commands, simple go back to the start
+    /*
+    if(history->numPastCommands == 0) {
+        returnToStart(text, history);
+        return;
     }
-        // delete command to redo
-    else if (command->type == 'd') {
-        if (command->deleteWorks)
-            revertDeleteText(text, command->prevData);
-    }
-    #ifdef DEBUG
-    else
-    {
-        printf("ERROR: try to time travel with a bad command\n");
-    }
-    #endif
+    */
 
-    swipeEventStack(command, &history->pastCommands, &history->futureCommands);
+    // undo commands in stack
+    for (int i = 0; i < history->commandsToTravel; i++) {
+        command = history->pastCommands;
+
+        revertCommand(command, text);
+
+        swipeEventStack(command, &history->pastCommands, &history->futureCommands);
+    }
+
+    history->commandsToTravel = 0;
     return;
 }
 
 void backToTheFuture(t_history *history, t_text *text) {
+
     t_command *command, *app;
 
-    // no commands to do
-    // if(history -> futureCommands == NULL)
-    //     return;
+    // redo commands in stack
+    for (int i = 0; i < history->commandsToTravel; i++) {
+        command = history->futureCommands;
 
-    command = history->futureCommands;
-    // change command to redo
+        revertCommand(command, text);
+
+        // command go to other stack
+        swipeEventStack(command, &history->futureCommands, &history->pastCommands);
+    }
+
+    history->commandsToTravel = 0;
+    return;
+}
+
+void revertCommand(t_command *command, t_text *text) {
+    // check command type
     if (command->type == 'c') {
         revertChange(command, text);
     }
-    // delete command to redo
     else if (command->type == 'd') {
-        if (command->deleteWorks)
-            revertDeleteText(text, command->data);
+        if (command->deleteWorks) {
+            command->prevData = revertDeleteText(text, command->prevData);
+        }
     }
     #ifdef DEBUG
     else
@@ -490,8 +480,6 @@ void backToTheFuture(t_history *history, t_text *text) {
     }
     #endif
 
-    // command go to other stack
-    swipeEventStack(command, &history->futureCommands, &history->pastCommands);
     return;
 }
 
@@ -500,7 +488,6 @@ void revertChange(t_command *command, t_text *text) {
     // restore prev data
     if (command->prevData.lines == NULL && command->start == 1) {
         // create new empty text
-        free(text->lines);
         createText(text);
     } else {
         changeText(text, command->prevData, command->start);
@@ -530,8 +517,7 @@ void swipeEventStack(t_command *command, t_command **old, t_command **new) {
     return;
 }
 
-void returnToStart(t_text *text, t_history *history)
-{
+void returnToStart(t_text *text, t_history *history) {
     // move commands to futureStack
     for (int i = 0; i < history->commandsToTravel; i++) {
         // swipe data only for change commands
@@ -600,15 +586,10 @@ void deleteText(t_text *text, t_command *command) {
     command->prevData.numLines = text->numLines;
     command->prevData = getNewTextArea(command->prevData.numLines);
 
-    // initialize data to allocate text after delete
-    command->data.numLines = numLinesAfterDelete;
-    command->data = getNewTextArea(command->data.numLines);
-
     // save first part of text
     for(int i = 0; i < command->start - 1; i++) {
         // save line
         command->prevData.lines[i] = text->lines[i];
-        command->data.lines[i] = text->lines[i];
     }
 
     // delete lines by shift up text
@@ -619,7 +600,6 @@ void deleteText(t_text *text, t_command *command) {
         command->prevData.lines[currLine] = text->lines[currLine];
         // shift text
         text->lines[currLine] = text->lines[command->end + i];
-        command->data.lines[currLine] = text->lines[currLine];
     }
 
     // save last lines
@@ -636,14 +616,15 @@ void deleteText(t_text *text, t_command *command) {
     return;
 }
 
-void revertDeleteText(t_text *text, t_text oldText) {
-
+t_text revertDeleteText(t_text *text, t_text oldText) {
+    t_text actualText;
+    actualText = *text;
     // write old text
     text->buffersAllocated = oldText.buffersAllocated;
     text->lines = oldText.lines;
     text->numLines = oldText.numLines;
 
-    return;
+    return actualText;
 }
 
 t_text readAndOverwriteText(t_text *text, t_text data, int start, int end) {
