@@ -79,7 +79,7 @@ void backToTheFuture(t_history *history, t_text *text);
 
 void backToThePast(t_history *history, t_text *text);
 
-void revertCommand(t_command *, t_text *);
+void revertCommand(t_command *, t_text *, t_boolean);
 
 void revertChange(t_command *command, t_text *text);
 
@@ -96,7 +96,7 @@ t_text changeText(t_text *, t_text, int);
 
 void deleteText(t_text *, t_command *);
 
-t_text revertDeleteText(t_text *, t_text);
+void revertDeleteText(t_text *, t_command *);
 
 int getStartWithOffset(t_text *, int);
 
@@ -110,6 +110,10 @@ void checkAndReallocText(t_text *, int);
 
 t_text getNewTextArea(int);
 
+t_text shiftAndReadText(t_text *, int, int);
+
+void createSpaceInMiddleText(t_text *, int, int);
+
 // utilities
 char *readLine();
 
@@ -120,6 +124,8 @@ int stringSize(char *string);
 void swapText(t_text *, t_text *);
 
 t_text getEmptyTextStruct();
+
+void freeCommand(t_command **);
 
 // ----- READ COMMAND -----
 
@@ -396,9 +402,7 @@ void forgetFuture(t_history *history) {
     while (command != NULL) {
         app = command;
         command = command->next;
-        free(app->data.lines);
-        free(app->prevData.lines);
-        free(app);
+        freeCommand(&app);
     }
     history->futureCommands = NULL;
     history->numFutureCommands = 0;
@@ -415,7 +419,7 @@ void addNewEventToHistory(t_history *history, t_command *command) {
         history->pastCommands = newHead;
         history->numPastCommands++;
     } else {
-        free(command);
+        freeCommand(&command);
     }
     return;
 }
@@ -426,19 +430,11 @@ void backToThePast(t_history *history, t_text *text) {
 
     history->commandsToTravel *= -1;
 
-    // if after undo remain no commands, simple go back to the start
-    /*
-    if(history->numPastCommands == 0) {
-        returnToStart(text, history);
-        return;
-    }
-    */
-
     // undo commands in stack
     for (int i = 0; i < history->commandsToTravel; i++) {
         command = history->pastCommands;
 
-        revertCommand(command, text);
+        revertCommand(command, text, true);
 
         swipeEventStack(command, &history->pastCommands, &history->futureCommands);
     }
@@ -455,7 +451,7 @@ void backToTheFuture(t_history *history, t_text *text) {
     for (int i = 0; i < history->commandsToTravel; i++) {
         command = history->futureCommands;
 
-        revertCommand(command, text);
+        revertCommand(command, text, false);
 
         // command go to other stack
         swipeEventStack(command, &history->futureCommands, &history->pastCommands);
@@ -465,14 +461,19 @@ void backToTheFuture(t_history *history, t_text *text) {
     return;
 }
 
-void revertCommand(t_command *command, t_text *text) {
+void revertCommand(t_command *command, t_text *text, t_boolean isUndo) {
     // check command type
     if (command->type == 'c') {
         revertChange(command, text);
     }
     else if (command->type == 'd') {
         if (command->deleteWorks) {
-            command->prevData = revertDeleteText(text, command->prevData);
+            if(isUndo) {
+                revertDeleteText(text, command);
+            } else {
+                free(command->prevData.lines);
+                deleteText(text, command);
+            }
         }
     }
     #ifdef DEBUG
@@ -486,19 +487,19 @@ void revertCommand(t_command *command, t_text *text) {
 }
 
 void revertChange(t_command *command, t_text *text) {
-
+    t_text app;
     // restore prev data
     if (command->prevData.lines == NULL && command->start == 1) {
-        // create new empty text
-        createText(text);
+        // no lines, so text empty
+        text->numLines = 0;
     } else {
-        changeText(text, command->prevData, command->start);
+        app = changeText(text, command->prevData, command->start);
+        free(app.lines);
         // check if this change append new lines
         if(command->prevData.numLines < command->data.numLines) {
             text->numLines -= command->data.numLines - command->prevData.numLines;
         }
     }
-
     // swap
     swapText(&(command->prevData), &(command->data));
     return;
@@ -527,9 +528,8 @@ void returnToStart(t_text *text, t_history *history) {
             swapText(&(history->pastCommands->data), &(history->pastCommands->prevData));
         swipeEventStack(history->pastCommands, &history->pastCommands, &history->futureCommands);
     }
-    // create new empty text
-    free(text->lines);
-    createText(text);
+    // zero lines, text deleted
+    text->numLines = 0;
     history->commandsToTravel = 0;
     return;
 }
@@ -578,60 +578,31 @@ t_text changeText(t_text *text, t_text data, int start) {
 
 void deleteText(t_text *text, t_command *command) {
 
-    int startOffset = 0;
-    int currLine = 0;
-    int numLinesToShift = text->numLines - command->end;
-    int numLinesDeleted = command->end - command->start + 1;
-    int numLinesAfterDelete = text->numLines - numLinesDeleted;
+    int numLinesToDelete = command->end - command->start + 1;
 
-    // initialize prevData to allocate all actual text
-    command->prevData.numLines = text->numLines;
-    command->prevData = getNewTextArea(command->prevData.numLines);
+    // shift lines
+    command->prevData = shiftAndReadText(text, command->start, command->end);
 
-    // save first part of text
-    for(int i = 0; i < command->start - 1; i++) {
-        // save line
-        command->prevData.lines[i] = text->lines[i];
-    }
-
-    // delete lines by shift up text
-    startOffset = command->start - 1;
-    for(int i = 0; i < numLinesToShift; i++) {
-        currLine = startOffset + i;
-        // save line
-        command->prevData.lines[currLine] = text->lines[currLine];
-        // shift text
-        text->lines[currLine] = text->lines[command->end + i];
-    }
-
-    // save last lines
-    startOffset = numLinesAfterDelete;
-    for(int i = 0; i < numLinesDeleted; i++) {
-        currLine = startOffset + i;
-        // save line
-        command->prevData.lines[currLine] = text->lines[currLine];
-    }
-
-    // update num lines
-    text->numLines = numLinesAfterDelete;
+    // save new num lines
+    text -> numLines = text -> numLines - numLinesToDelete;
 
     return;
 }
 
-t_text revertDeleteText(t_text *text, t_text oldText) {
-    t_text actualText;
+void revertDeleteText(t_text *text, t_command *command) {
+    int newLastLine = text -> numLines + command->prevData.numLines;
+    int numLinesToMove = text -> numLines - command->start + 1;
 
-    // save actual text
-    actualText.buffersAllocated = text->buffersAllocated;
-    actualText.lines = text->lines;
-    actualText.numLines = text->numLines;
+    // create space
+    createSpaceInMiddleText(text, numLinesToMove, newLastLine);
 
-    // write old text
-    text->buffersAllocated = oldText.buffersAllocated;
-    text->lines = oldText.lines;
-    text->numLines = oldText.numLines;
+    // write lines
+    command->data = changeText(text, command->prevData, command->start);
 
-    return actualText;
+    // save new num lines
+    text -> numLines = newLastLine;
+
+    return;
 }
 
 t_text readAndOverwriteText(t_text *text, t_text data, int start, int end) {
@@ -679,7 +650,7 @@ int getTextBuffersRequired(int numLines) {
 void checkAndReallocText(t_text *text, int newNumLines) {
     int buffersRequired = getTextBuffersRequired(newNumLines);
     if(buffersRequired > text->buffersAllocated) {
-        text->buffersAllocated++;
+        text->buffersAllocated = buffersRequired;
         text->lines = realloc(text->lines, sizeof(char *) * TEXT_BUFFER_SIZE * text->buffersAllocated);
     }
 }
@@ -692,6 +663,48 @@ t_text getNewTextArea(int numLines) {
     newText.lines = malloc(sizeof(char *) * newText.buffersAllocated * TEXT_BUFFER_SIZE);
 
     return newText;
+}
+
+t_text shiftAndReadText(t_text *text, int start, int end)
+{
+    t_text data;
+    int numLinesToDelete = end - start + 1;
+    int numLinesRemainToShift = text -> numLines - end - numLinesToDelete;
+    int startOffset = start - 1;
+    int endOffset = end;
+
+    data.numLines = numLinesToDelete;
+    data.lines = malloc(sizeof(char *) * data.numLines);
+
+    for(int i = 0; i < numLinesToDelete; i++)
+    {
+        data.lines[i] =  text -> lines[startOffset + i];
+        // overwrite lines from start to end
+        text -> lines[startOffset + i] = text -> lines[endOffset + i];
+    }
+
+    // some rows already shifted
+    startOffset += numLinesToDelete;
+    endOffset += numLinesToDelete;
+    for(int i = 0; i < numLinesRemainToShift; i++)
+    {
+        // overwrite lines from start to end
+        text -> lines[startOffset + i] = text -> lines[endOffset + i];
+    }
+
+    return data;
+}
+
+// createSpaceInMiddleText move lines to create space
+void createSpaceInMiddleText(t_text *text, int numLinesToMove, int newLastLine) {
+
+    int startOffset = newLastLine - 1;
+    int endOffset = text -> numLines - 1;
+    for(int i = 0; i < numLinesToMove; i++)
+    {
+        // overwrite lines from start to new end
+        text -> lines[startOffset - i] = text -> lines[endOffset - i];
+    }
 }
 
 // ----- UTILITIES FUNCTIONS -----
@@ -747,6 +760,20 @@ t_text getEmptyTextStruct() {
     data.numLines = 0;
     data.buffersAllocated = 0;
     return data;
+}
+
+void freeCommand(t_command **command) {
+
+    free((*command)->prevData.lines);
+    (*command)->prevData.lines = NULL;
+
+    free((*command)->data.lines);
+    (*command)->data.lines = NULL;
+
+    free((*command));
+    (*command) = NULL;
+
+    return;
 }
 
 // ----- MAIN -----
