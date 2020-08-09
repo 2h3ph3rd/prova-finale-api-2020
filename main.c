@@ -23,7 +23,8 @@ typedef enum type { CHANGE, PRINT, DELETE, REDO, UNDO, QUIT } t_type;
 typedef struct piece {
     int start;
     int length;
-    int offset;
+    int leftOffset;
+    int rightOffset;
 } t_piece;
 
 typedef struct node {
@@ -87,12 +88,21 @@ void readCommandStartAndEnd(t_command *, char *);
 // readCommandData read lines from input, store them in text and return a piece to them
 t_piece *readCommandData(t_table *, t_command *);
 
+// - EXECUTE COMMAND
+
+// executeCommand execute the command given
+void executeCommand(t_table *, t_command *);
+// printCommand print text from start to end (start + length - 1)
+void printCommand(t_table *, t_command *);
+
 // - UTILITIES
 
 // checkAndReallocText check text overflow and realloc to bigger area
 void checkAndReallocText(t_table *, int );
 // readLine read a line from standard input and return a pointer to it
 char *readLine();
+// getCurrentTextLength return current text length
+int getCurrentTextLength(t_table *);
 
 // - TYPES UTILITIES
 
@@ -124,7 +134,7 @@ int main() {
     command = readCommand(table);
 
     while (command->type != QUIT) {
-        //executeCommand(command, &text, &history);
+        executeCommand(table, command);
         // updateHistory(&history, command);
 
         command = readCommand(table);
@@ -278,6 +288,68 @@ void readCommandStartAndEnd(t_command *command, char *line) {
     return;
 }
 
+/* -------------------------------------
+ * ---------- EXECUTE COMMAND ----------
+ * -------------------------------------
+ */
+
+// executeCommand execute the command given
+void executeCommand(t_table *table, t_command *command) {
+    // if (history->timeTravelMode == true && command->type != 'r' && command->type != 'u') {
+    //     if (history->commandsToTravel < 0) {
+    //         backToThePast(history, text);
+    //     } else if (history->commandsToTravel > 0) {
+    //         backToTheFuture(history, text);
+    //     }
+    //     // otherwise nothing to do
+    // }
+    switch (command->type) {
+        case PRINT:
+            printCommand(table, command);
+        break;
+        case CHANGE:
+            // changeCommand(command);
+        break;
+        case DELETE:
+            // deleteCommand(command, text);
+        break;
+        case UNDO:
+            // undoCommand(command, text, history);
+        break;
+        case REDO:
+            // redoCommand(command, text, history);
+        break;
+    }
+}
+
+// printCommand print text from start to end (start + length - 1)
+void printCommand(t_table *table, t_command *command) {
+    int end = command->start + command->length - 1;
+    int textLength = getCurrentTextLength(table);
+
+    // if start is zero, print a line with a dot and continue
+    if (command->start == 0) {
+        printf(".\n");
+        command->start = 1;
+        command->length--;
+    }
+
+    // check if start is in text, otherwise print only lines with dot
+    if (command->start > textLength) {
+        for (int i = 0; i < command->length; i++)
+            printf(".\n");
+    } else {
+        // check for overflow
+        if (end < textLength) {
+            // printText(text, command->start, command->end);
+        } else {
+            // printText(text, command->start, text->numLines);
+            for (int i = textLength; i < end; i++)
+                printf(".\n");
+        }
+    }
+}
+
 /* -------------------------------
  * ---------- UTILITIES ----------
  * -------------------------------
@@ -318,6 +390,10 @@ char *readLine() {
     return line;
 }
 
+// getCurrentTextLength return current text length
+int getCurrentTextLength(t_table *table) {
+    return table->text->root->piece->leftOffset + table->text->root->piece->length + table->text->root->piece->rightOffset;
+}
 
 /* -------------------------------------
  * ---------- TYPES UTILITIES ----------
@@ -330,7 +406,8 @@ t_piece *createEmptyPiece() {
 
     piece->start = 0;
     piece->length = 0;
-    piece->offset = 0;
+    piece->leftOffset = 0;
+    piece->rightOffset = 0;
 
     return piece;
 }
