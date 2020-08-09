@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
+#include <ctype.h>
 
 #define MAX_LINE_LENGTH 1024
 #define TEXT_BUFFER_SIZE 1000
@@ -76,7 +77,22 @@ typedef struct table {
 // - READ COMMAND
 
 // readCommand read command from input
-t_command *readCommand(t_table *table);
+t_command *readCommand(t_table *);
+// getCommandType return command type in given line
+t_type getCommandType(char *);
+// readCommandStart return command start number
+int readCommandStart(t_command *, char *);
+// readCommandStartAndEnd set command start and length
+void readCommandStartAndEnd(t_command *, char *);
+// readCommandData read lines from input, store them in text and return a piece to them
+t_piece *readCommandData(t_table *, t_command *);
+
+// - UTILITIES
+
+// checkAndReallocText check text overflow and realloc to bigger area
+void checkAndReallocText(t_table *, int );
+// readLine read a line from standard input and return a pointer to it
+char *readLine();
 
 // - TYPES UTILITIES
 
@@ -105,13 +121,13 @@ int main() {
 
     table = createNewEmptyTable();
 
-    command = readCommand();
+    command = readCommand(table);
 
     while (command->type != QUIT) {
         //executeCommand(command, &text, &history);
         // updateHistory(&history, command);
 
-        command = readCommand();
+        command = readCommand(table);
     }
 
     return 0;
@@ -136,21 +152,21 @@ t_command *readCommand(t_table *table) {
     // if command type is quit
     if(command->type == QUIT)
         // than nothing to do
-        return;
+        return command;
 
     // undo and redo do not have end
     if (command->type == UNDO || command->type == REDO) {
         // only start
-        command->start = readCommandStart(*command, line);
-        return;
+        command->start = readCommandStart(command, line);
+        return command;
     }
 
     if (command->type == CHANGE || command->type == DELETE || command->type == PRINT)
         readCommandStartAndEnd(command, line);
 
-    // 3. Read data
+    // Read data
     if (command->type == CHANGE)
-        command->lines = readCommandData(*command);
+        command->piece = readCommandData(table, command);
 
     // clear read line
     free(line);
@@ -161,7 +177,7 @@ t_command *readCommand(t_table *table) {
 // getCommandType return command type in given line
 t_type getCommandType(char *line) {
     // command type is always the last char of the line
-    switch(line[stringSize(line) - 1]) {
+    switch(line[strlen(line) - 1]) {
         case 'c':
             return CHANGE;
         case 'p':
@@ -177,41 +193,40 @@ t_type getCommandType(char *line) {
     }
 }
 
-t_text readCommandData(t_command command) {
+// readCommandData read lines from input, store them in text and return a piece to them
+t_piece *readCommandData(t_table *table, t_command *command) {
 
     char *line;
-    t_text data;
+    t_piece *piece = createEmptyPiece();
 
     // start cannot be under 0
-    if (command.start <= 0) {
-        command.start = 1;
+    if (command->start <= 0) {
+        command->start = 1;
     }
 
-    // num of lines is given by the difference between end and start
-    data.numLines = command.end - command.start + 1;
+    // check for overflow
+    checkAndReallocText(table, command->length);
 
-    // allocate numLines strings
-    data.lines = malloc(sizeof(char *) * data.numLines + 1);
+    // save piece info
+    piece->start = table->numLines;
+    piece->length = command->length;
+
     // read lines
-    for (int i = 0; i < data.numLines; i++) {
+    for (int i = 0; i < command->length; i++) {
         line = readLine();
-        data.lines[i] = line;
+        table->lines[table->numLines] = line;
+        table->numLines++;
     }
 
     // read last line with dot
     line = readLine();
     free(line);
 
-    #ifdef DEBUG
-        if(line[0] != '.')
-        {
-            printf("ERROR: change command not have a dot as last line\n");
-        }
-    #endif
-    return data;
+    return piece;
 }
 
-int readCommandStart(t_command command, char *line) {
+// readCommandStart return command start number
+int readCommandStart(t_command *command, char *line) {
     char numStr[MAX_LINE_LENGTH];
     // counter for line
     int i = 0;
@@ -219,7 +234,7 @@ int readCommandStart(t_command command, char *line) {
     int j = 0;
 
     // read start
-    while (line[i] != command.type) {
+    while (isdigit(line[i])) {
         numStr[j] = line[i];
         i++;
         j++;
@@ -230,6 +245,7 @@ int readCommandStart(t_command command, char *line) {
     return atoi(numStr);
 }
 
+// readCommandStartAndEnd set command start and length
 void readCommandStartAndEnd(t_command *command, char *line) {
     char numStr[MAX_LINE_LENGTH];
     // counter for line
@@ -238,7 +254,7 @@ void readCommandStartAndEnd(t_command *command, char *line) {
     int j = 0;
 
     // read start
-    while (line[i] != ',') {
+    while (isdigit(line[i])) {
         numStr[j] = line[i];
         i++;
         j++;
@@ -251,16 +267,57 @@ void readCommandStartAndEnd(t_command *command, char *line) {
     // curr char is ','
     i++;
     // read end
-    while (line[i] != command->type) {
+    while (isdigit(line[i])) {
         numStr[j] = line[i];
         i++;
         j++;
     }
     numStr[j] = '\0';
-    command->end = atoi(numStr);
+    command->length = atoi(numStr) - command->start + 1;
 
     return;
 }
+
+/* -------------------------------
+ * ---------- UTILITIES ----------
+ * -------------------------------
+ */
+
+// checkAndReallocText check text overflow and realloc to bigger area
+void checkAndReallocText(t_table *table, int numLinesToAdd) {
+    int buffersRequired = (table->numLines + numLinesToAdd) / TEXT_BUFFER_SIZE;
+    // always at least one buffer is allocated
+    int buffersAlloc = table->numLines / TEXT_BUFFER_SIZE;
+    // check and realloc
+    if(buffersRequired > buffersAlloc) {
+        table->lines = realloc(table->lines, sizeof(char *) * buffersRequired * TEXT_BUFFER_SIZE);
+    }
+    return;
+}
+
+// readLine read a line from standard input and return a pointer to it
+char *readLine() {
+    int i;
+    char c;
+    char *line = malloc(sizeof(char) * (MAX_LINE_LENGTH + 1));
+
+    c = getchar();
+    i = 0;
+
+    while (c != '\n') {
+        line[i] = c;
+        i++;
+
+        c = getchar();
+    }
+    line[i] = '\0';
+    i++;
+
+    line = realloc(line, sizeof(char) * i);
+
+    return line;
+}
+
 
 /* -------------------------------------
  * ---------- TYPES UTILITIES ----------
@@ -330,7 +387,7 @@ t_tree *createEmptyTree() {
 t_table *createNewEmptyTable() {
     t_table *table = malloc(sizeof(table));
 
-    table->text = createNewEmptyTree();
+    table->text = createEmptyTree();
     table->history = createEmptyHistory();
     table->lines = malloc(sizeof(char *) * TEXT_BUFFER_SIZE);
     table->numLines = 0;
