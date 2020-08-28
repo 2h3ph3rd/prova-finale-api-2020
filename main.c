@@ -314,24 +314,21 @@ void changeCommand(t_command *command, t_text *text) {
     if (command->start <= 0) {
         command->start = 1;
     }
-    // start cannot be greater than last line + 1
-    // if(command -> start > text -> numLines + 1)
-    //    return;
 
     command->prevData = changeText(text, command->data, command->start);
     return;
 }
 
 void deleteCommand(t_command *command, t_text *text) {
-    // start cannot be equal or lower 0
-    if (command->start <= 0) {
-        command->start = 1;
-    }
     // start cannot be greater than num lines
     if(command -> start > text -> numLines)
     {
         command->deleteWorks = false;
         return;
+    }
+    // start cannot be equal or lower 0
+    if (command->start <= 0) {
+        command->start = 1;
     }
     if(command -> end > text -> numLines)
     {
@@ -468,12 +465,7 @@ void revertCommand(t_command *command, t_text *text, t_boolean isUndo) {
     }
     else if (command->type == 'd') {
         if (command->deleteWorks) {
-            if(isUndo) {
-                revertDeleteText(text, command);
-            } else {
-                free(command->prevData.lines);
-                deleteText(text, command);
-            }
+            revertDeleteText(text, command);
         }
     }
     #ifdef DEBUG
@@ -524,8 +516,13 @@ void returnToStart(t_text *text, t_history *history) {
     // move commands to futureStack
     for (int i = 0; i < history->commandsToTravel; i++) {
         // swipe data only for change commands
-        if(history->pastCommands != NULL && history->pastCommands->type == 'c')
-            swapText(&(history->pastCommands->data), &(history->pastCommands->prevData));
+        if(history->pastCommands != NULL){
+            if(history->pastCommands->type == 'c') {
+                swapText(&(history->pastCommands->data), &(history->pastCommands->prevData));
+            } else {
+                swapText(text, &(history->pastCommands->prevData));
+            }
+        }
         swipeEventStack(history->pastCommands, &history->pastCommands, &history->futureCommands);
     }
     // zero lines, text deleted
@@ -590,19 +587,7 @@ void deleteText(t_text *text, t_command *command) {
 }
 
 void revertDeleteText(t_text *text, t_command *command) {
-    int newLastLine = text -> numLines + command->prevData.numLines;
-    int numLinesToMove = text -> numLines - command->start + 1;
-
-    // create space
-    createSpaceInMiddleText(text, numLinesToMove, newLastLine);
-
-    // write lines
-    command->data = changeText(text, command->prevData, command->start);
-
-    // save new num lines
-    text -> numLines = newLastLine;
-
-    return;
+    swapText(text, &command->prevData);
 }
 
 t_text readAndOverwriteText(t_text *text, t_text data, int start, int end) {
@@ -672,24 +657,48 @@ t_text shiftAndReadText(t_text *text, int start, int end)
     int numLinesRemainToShift = text -> numLines - end - numLinesToDelete;
     int startOffset = start - 1;
     int endOffset = end;
+    int dataCounter = 0;
 
-    data.numLines = numLinesToDelete;
-    data.lines = malloc(sizeof(char *) * data.numLines);
+    data.numLines = text->numLines;
+    if(text->buffersAllocated == 0) {
+        data.lines = malloc(sizeof(char *) * TEXT_BUFFER_SIZE);
+        data.buffersAllocated = 1;
+    } else {
+        data.lines = malloc(sizeof(char *) * text->buffersAllocated * TEXT_BUFFER_SIZE);
+        data.buffersAllocated = text->buffersAllocated;
+    }
 
-    for(int i = 0; i < numLinesToDelete; i++)
-    {
-        data.lines[i] =  text -> lines[startOffset + i];
+    for(int i = 0; i < startOffset; i++) {
+        // save prev data
+        data.lines[dataCounter] = text->lines[i];
+        dataCounter++;
+    }
+
+    for(int i = 0; i < numLinesToDelete; i++) {
+        // save prev data
+        data.lines[dataCounter] = text->lines[startOffset + i];
+        dataCounter++;
         // overwrite lines from start to end
-        text -> lines[startOffset + i] = text -> lines[endOffset + i];
+        text -> lines[startOffset + i] = text->lines[endOffset + i];
     }
 
     // some rows already shifted
     startOffset += numLinesToDelete;
     endOffset += numLinesToDelete;
-    for(int i = 0; i < numLinesRemainToShift; i++)
-    {
+    for(int i = 0; i < numLinesRemainToShift; i++) {
+        // save prev data
+        data.lines[dataCounter] = text->lines[startOffset + i];
+        dataCounter++;
         // overwrite lines from start to end
-        text -> lines[startOffset + i] = text -> lines[endOffset + i];
+        text->lines[startOffset + i] = text->lines[endOffset + i];
+    }
+
+    // save last prev data
+    startOffset += numLinesRemainToShift;
+    for(int i = 0; i < numLinesToDelete; i++) {
+        // save prev data
+        data.lines[dataCounter] = text->lines[startOffset + i];
+        dataCounter++;
     }
 
     return data;
