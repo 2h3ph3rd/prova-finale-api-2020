@@ -316,7 +316,6 @@ void changeCommand(t_command *command, t_text *text) {
     }
 
     command->prevData = changeText(text, command->data, command->start);
-    return;
 }
 
 void deleteCommand(t_command *command, t_text *text) {
@@ -335,7 +334,6 @@ void deleteCommand(t_command *command, t_text *text) {
         command -> end = text -> numLines;
     }
     deleteText(text, command);
-    return;
 }
 
 void undoCommand(t_command *command, t_text *text, t_history *history) {
@@ -346,7 +344,6 @@ void undoCommand(t_command *command, t_text *text, t_history *history) {
     history->numPastCommands -= command->start;
     history->numFutureCommands += command->start;
     history->timeTravelMode = true;
-    return;
 }
 
 void redoCommand(t_command *command, t_text *text, t_history *history) {
@@ -380,7 +377,7 @@ void updateHistory(t_history *history, t_command *command) {
 }
 
 void checkForPastChanges(t_history *history, t_command *command) {
-    // only when true check if future is change
+    // only when time travel mode is true check if future is change
     // than you cannot turn back to your dimension
     if (history->timeTravelMode == true) {
         // only while doing undo and redo you can return in the future
@@ -760,7 +757,6 @@ void swapText(t_text *data1, t_text *data2) {
     app = *data1;
     *data1 = *data2;
     *data2 = app;
-    return;
 }
 
 t_text getEmptyTextStruct() {
@@ -773,16 +769,16 @@ t_text getEmptyTextStruct() {
 
 void freeCommand(t_command **command) {
 
-    free((*command)->prevData.lines);
-    (*command)->prevData.lines = NULL;
+    if((*command)->type != 'd') {
+        free((*command)->prevData.lines);
+        (*command)->prevData.lines = NULL;
+    }
 
     free((*command)->data.lines);
     (*command)->data.lines = NULL;
 
     free((*command));
     (*command) = NULL;
-
-    return;
 }
 
 // ----- MAIN -----
