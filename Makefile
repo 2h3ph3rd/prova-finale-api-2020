@@ -41,4 +41,5 @@ test: build
 	./tests.out
 
 clean:
-	rm *.out
+	rm -f *.out
+	rm -f main
