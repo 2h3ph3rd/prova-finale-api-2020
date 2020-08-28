@@ -290,13 +290,13 @@ void executeCommand(t_command *command, t_text *text, t_history *history) {
 void printCommand(t_command *command, t_text *text) {
     // if start is zero, print a line with a dot and continue
     if (command->start == 0) {
-        printf(".\n");
+        printLine(".\n");
         command->start = 1;
     }
     // check if start is in text, otherwise online lines with dot
     if (command->start > text->numLines) {
         for (int i = command->start; i < command->end + 1; i++)
-            printf(".\n");
+            printLine(".\n");
     } else {
         // check for overflow
         if (command->end < text->numLines) {
@@ -304,7 +304,7 @@ void printCommand(t_command *command, t_text *text) {
         } else {
             printText(text, command->start, text->numLines);
             for (int i = text->numLines; i < command->end; i++)
-                printf(".\n");
+                printLine(".\n");
         }
     }
 }
@@ -542,7 +542,7 @@ void printText(t_text *text, int start, int end) {
     int startOffset = start - 1;
 
     for(int i = 0; i < numLinesToPrint; i++) {
-        printf("%s\n", text->lines[startOffset + i]);
+        printLine(text->lines[startOffset + i]);
     }
 
     return;
@@ -733,7 +733,7 @@ char *readLine() {
 
 void printLine(char *line) {
     int i = 0;
-    while (line[i] != '\0') {
+    while (line[i] != '\n' && line[i] != '\0') {
         putchar(line[i]);
         i++;
     }
