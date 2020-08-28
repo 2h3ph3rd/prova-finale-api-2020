@@ -651,7 +651,6 @@ t_text shiftAndReadText(t_text *text, int start, int end)
 {
     t_text data;
     int numLinesToDelete = end - start + 1;
-    int numLinesRemainToShift = text -> numLines - end - numLinesToDelete;
     int startOffset = start - 1;
     int endOffset = end;
     int dataCounter = 0;
@@ -671,7 +670,7 @@ t_text shiftAndReadText(t_text *text, int start, int end)
         dataCounter++;
     }
 
-    for(int i = 0; i < numLinesToDelete; i++) {
+    for(int i = 0; i < text->numLines - numLinesToDelete; i++) {
         // save prev data
         data.lines[dataCounter] = text->lines[startOffset + i];
         dataCounter++;
@@ -680,18 +679,7 @@ t_text shiftAndReadText(t_text *text, int start, int end)
     }
 
     // some rows already shifted
-    startOffset += numLinesToDelete;
-    endOffset += numLinesToDelete;
-    for(int i = 0; i < numLinesRemainToShift; i++) {
-        // save prev data
-        data.lines[dataCounter] = text->lines[startOffset + i];
-        dataCounter++;
-        // overwrite lines from start to end
-        text->lines[startOffset + i] = text->lines[endOffset + i];
-    }
-
-    // save last prev data
-    startOffset += numLinesRemainToShift;
+    startOffset = text->numLines - numLinesToDelete;
     for(int i = 0; i < numLinesToDelete; i++) {
         // save prev data
         data.lines[dataCounter] = text->lines[startOffset + i];
