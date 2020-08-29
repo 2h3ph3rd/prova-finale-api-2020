@@ -1,12 +1,15 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
-// #define DEBUG
 #define MAX_LINE_LENGTH 1024
 #define HISTORY_BUFFER_SIZE 100
 #define TEXT_BUFFER_SIZE 1000
 
-// ----- TYPES -----
+/* ---------------------------
+ * ---------- TYPES ----------
+ * ---------------------------
+ */
 
 typedef enum boolean {
     false, true
@@ -29,7 +32,6 @@ typedef struct command {
 } t_command;
 
 typedef struct history {
-    // stack
     t_command *pastCommands;
     int numPastCommands;
     t_command *futureCommands;
@@ -38,97 +40,167 @@ typedef struct history {
     int commandsToTravel;
 } t_history;
 
-// ----- PROTOTYPES -----
+/* --------------------------------
+ * ---------- PROTOTYPES ----------
+ * --------------------------------
+ */
 
-// read command
+// READ COMMAND
+
+// readCommand read a command from stdin and return it
 t_command *readCommand();
 
+// readCommand read command type in the given line
 int getCommandType(char *);
 
+// readCommand read command start in the given line
 int readCommandStart(t_command, char *);
 
+// readCommand read command start and end in the given line
 void readCommandStartAndEnd(t_command *, char *);
 
+// readCommand read command data
 t_text readCommandData(t_command);
 
-// execute command
+// EXECUTE COMMAND
+
+// executeCommand execute the given command by call relative function
 void executeCommand(t_command *, t_text *, t_history *);
 
+// printCommand execute a print command with data given
 void printCommand(t_command *, t_text *);
 
+// changeCommand execute a change command with data given
 void changeCommand(t_command *, t_text *);
 
+// deleteCommand execute a delete command with data given
 void deleteCommand(t_command *, t_text *);
 
+// undoCommand prepare an undo command for next editing of text and history
 void undoCommand(t_command *, t_text *, t_history *);
 
+// redoCommand prepare a redo command for next editing of text and history
 void redoCommand(t_command *, t_text *, t_history *);
 
-// update history
+// UPDATE HISTORY
+
+// createHistory create a new empty history struct
 void createHistory(t_history *);
 
+// updateHistory check for update in history after a command execution
 void updateHistory(t_history *, t_command *);
 
+// checkForPastChanges check if past is changed than future cannot be restored
 void checkForPastChanges(t_history *, t_command *);
 
+// forgetFuture remove all commands stored in future stack
 void forgetFuture(t_history *);
 
+// addNewEventToHistory add a new command in history
 void addNewEventToHistory(t_history *, t_command *);
 
+// backToTheFuture revert commands to go back to the future
 void backToTheFuture(t_history *history, t_text *text);
 
+// backToThePast revert commands to go back to the past
 void backToThePast(t_history *history, t_text *text);
 
+// revertCommand revert a command
 void revertCommand(t_command *, t_text *, t_boolean);
 
+// revertCommand revert a change command
 void revertChange(t_command *command, t_text *text);
 
-void swipeEventStack(t_command *, t_command **, t_command **);
-
-void returnToStart(t_text *, t_history *);
-
-// text manager
-void createText(t_text *);
-
-void printText(t_text *, int, int);
-
-t_text changeText(t_text *, t_text, int);
-
-void deleteText(t_text *, t_command *);
-
+// revertCommand revert a delete command
 void revertDeleteText(t_text *, t_command *);
 
-int getStartWithOffset(t_text *, int);
+// moveEventBetweenStack move a command between first stack to second stack
+void moveEventBetweenStack(t_command *, t_command **, t_command **);
 
+// TEXT MANAGER
+
+// createText create a new empty text struct
+void createText(t_text *);
+
+// printText print text from start to end
+void printText(t_text *, int, int);
+
+// changeText modify text from start with data and length given
+t_text changeText(t_text *, t_text, int);
+
+// deleteText delete text from start to end given
+void deleteText(t_text *, t_command *);
+
+// readAndOverwriteText overwrite text while reading previous data
 t_text readAndOverwriteText(t_text *, t_text, int, int);
 
+// appendText add new text to the end
 void appendText(t_text *, t_text, int);
 
+// getTextBuffersRequired get buffers required for a text with length given
 int getTextBuffersRequired(int);
 
+// checkAndReallocText check if text needs reallocation
 void checkAndReallocText(t_text *, int);
 
-t_text getNewTextArea(int);
-
+// shiftAndReadText shift text from start to end given while reading previous data
 t_text shiftAndReadText(t_text *, int, int);
 
-void createSpaceInMiddleText(t_text *, int, int);
+// UTILITIES
 
-// utilities
+// readLine read a line from stdin
 char *readLine();
 
+// printLine print a line to stdout
 void printLine(char *);
 
-int stringSize(char *string);
-
+// swapText swap text struct
 void swapText(t_text *, t_text *);
 
+// getEmptyTextStruct return an empty text struct
 t_text getEmptyTextStruct();
 
+// freeCommand free all area allocated for a command
 void freeCommand(t_command **);
 
-// ----- READ COMMAND -----
+/* --------------------------
+ * ---------- MAIN ----------
+ * --------------------------
+ */
 
+int main() {
+    t_text text;
+    t_history history;
+    t_command *command;
+
+    createText(&text);
+    createHistory(&history);
+
+    /*
+        Execution process:
+        1. read command
+        2. execute command
+        3. update history
+    */
+
+    command = readCommand();
+
+    while (command->type != 'q') {
+        executeCommand(command, &text, &history);
+        updateHistory(&history, command);
+
+        command = readCommand();
+    }
+
+    return 0;
+}
+
+/* ----------------------------------
+ * ---------- READ COMMAND ----------
+ * ----------------------------------
+ */
+
+// readCommand read a command from stdin and return it
 t_command *readCommand() {
     t_command *command;
     char *line;
@@ -162,11 +234,13 @@ t_command *readCommand() {
     return command;
 }
 
+// readCommand read command type in the given line
 int getCommandType(char *line) {
     // command type is always the last char of the line
-    return line[stringSize(line) - 1];
+    return line[strlen(line) - 1];
 }
 
+// readCommand read command data
 t_text readCommandData(t_command command) {
 
     char *line;
@@ -201,6 +275,7 @@ t_text readCommandData(t_command command) {
     return data;
 }
 
+// readCommand read command start in the given line
 int readCommandStart(t_command command, char *line) {
     char numStr[MAX_LINE_LENGTH];
     // counter for line
@@ -220,6 +295,7 @@ int readCommandStart(t_command command, char *line) {
     return atoi(numStr);
 }
 
+// readCommand read command start and end in the given line
 void readCommandStartAndEnd(t_command *command, char *line) {
     char numStr[MAX_LINE_LENGTH];
     // counter for line
@@ -252,8 +328,12 @@ void readCommandStartAndEnd(t_command *command, char *line) {
     return;
 }
 
-// ----- EXECUTE COMMAND -----
+/* -------------------------------------
+ * ---------- EXECUTE COMMAND ----------
+ * -------------------------------------
+ */
 
+// executeCommand execute the given command by call relative function
 void executeCommand(t_command *command, t_text *text, t_history *history) {
     if (history->timeTravelMode == true && command->type != 'r' && command->type != 'u') {
         if (history->commandsToTravel < 0) {
@@ -279,14 +359,10 @@ void executeCommand(t_command *command, t_text *text, t_history *history) {
         case 'r':
             redoCommand(command, text, history);
             break;
-        #ifdef DEBUG
-            default:
-                printf("ERROR: cannot identify command type\n");
-            break;
-        #endif
     }
 }
 
+// printCommand execute a print command with data given
 void printCommand(t_command *command, t_text *text) {
     // if start is zero, print a line with a dot and continue
     if (command->start == 0) {
@@ -309,6 +385,7 @@ void printCommand(t_command *command, t_text *text) {
     }
 }
 
+// changeCommand execute a change command with data given
 void changeCommand(t_command *command, t_text *text) {
     // start cannot be equal or lower 0
     if (command->start <= 0) {
@@ -318,10 +395,10 @@ void changeCommand(t_command *command, t_text *text) {
     command->prevData = changeText(text, command->data, command->start);
 }
 
+// deleteCommand execute a delete command with data given
 void deleteCommand(t_command *command, t_text *text) {
     // start cannot be greater than num lines
-    if(command -> start > text -> numLines)
-    {
+    if(command -> start > text -> numLines) {
         command->deleteWorks = false;
         return;
     }
@@ -329,37 +406,53 @@ void deleteCommand(t_command *command, t_text *text) {
     if (command->start <= 0) {
         command->start = 1;
     }
-    if(command -> end > text -> numLines)
-    {
+    // end cannot be greater than text num lines
+    if(command -> end > text -> numLines) {
         command -> end = text -> numLines;
     }
     deleteText(text, command);
 }
 
+// undoCommand prepare an undo command for next editing of text and history
 void undoCommand(t_command *command, t_text *text, t_history *history) {
+    // cannot revert more commands than available
     if (command->start > history->numPastCommands) {
         command->start = history->numPastCommands;
     }
+    // set number for revert
+    // undo is negative
     history->commandsToTravel -= command->start;
+    // modify stack counters
     history->numPastCommands -= command->start;
     history->numFutureCommands += command->start;
+    // time travel mode is activated after an undo command
     history->timeTravelMode = true;
 }
 
+// redoCommand prepare a redo command for next editing of text and history
 void redoCommand(t_command *command, t_text *text, t_history *history) {
+    // only when time travel mode is active redo can be done
     if (history->timeTravelMode == true) {
+        // cannot revert more commands than available
         if (command->start > history->numFutureCommands) {
             command->start = history->numFutureCommands;
         }
+        // set number for revert
+        // redo is positive
         history->commandsToTravel += command->start;
+        // modify stack counters
         history->numPastCommands += command->start;
         history->numFutureCommands -= command->start;
     }
     return;
 }
 
-// ----- UPDATE HISTORY -----
+/* ------------------------------------
+ * ---------- UPDATE HISTORY ----------
+ * ------------------------------------
+ */
 
+// createHistory create a new empty history struct
 void createHistory(t_history *history) {
     history->commandsToTravel = 0;
     history->timeTravelMode = false;
@@ -370,12 +463,14 @@ void createHistory(t_history *history) {
     return;
 }
 
+// updateHistory check for update in history after a command execution
 void updateHistory(t_history *history, t_command *command) {
     checkForPastChanges(history, command);
     addNewEventToHistory(history, command);
     return;
 }
 
+// checkForPastChanges check if past is changed than future cannot be restored
 void checkForPastChanges(t_history *history, t_command *command) {
     // only when time travel mode is true check if future is change
     // than you cannot turn back to your dimension
@@ -390,6 +485,7 @@ void checkForPastChanges(t_history *history, t_command *command) {
     return;
 }
 
+// forgetFuture remove all commands stored in future stack
 void forgetFuture(t_history *history) {
     t_command *command, *app;
     command = history->futureCommands;
@@ -403,6 +499,7 @@ void forgetFuture(t_history *history) {
     return;
 }
 
+// addNewEventToHistory add a new command in history
 void addNewEventToHistory(t_history *history, t_command *command) {
     t_command *newHead;
 
@@ -418,6 +515,7 @@ void addNewEventToHistory(t_history *history, t_command *command) {
     return;
 }
 
+// backToThePast revert commands to go back to the past
 void backToThePast(t_history *history, t_text *text) {
     t_command *command, *app;
     char **strApp;
@@ -430,13 +528,14 @@ void backToThePast(t_history *history, t_text *text) {
 
         revertCommand(command, text, true);
 
-        swipeEventStack(command, &history->pastCommands, &history->futureCommands);
+        moveEventBetweenStack(command, &history->pastCommands, &history->futureCommands);
     }
 
     history->commandsToTravel = 0;
     return;
 }
 
+// backToTheFuture revert commands to go back to the future
 void backToTheFuture(t_history *history, t_text *text) {
 
     t_command *command, *app;
@@ -448,13 +547,14 @@ void backToTheFuture(t_history *history, t_text *text) {
         revertCommand(command, text, false);
 
         // command go to other stack
-        swipeEventStack(command, &history->futureCommands, &history->pastCommands);
+        moveEventBetweenStack(command, &history->futureCommands, &history->pastCommands);
     }
 
     history->commandsToTravel = 0;
     return;
 }
 
+// revertCommand revert a command
 void revertCommand(t_command *command, t_text *text, t_boolean isUndo) {
     // check command type
     if (command->type == 'c') {
@@ -475,26 +575,18 @@ void revertCommand(t_command *command, t_text *text, t_boolean isUndo) {
     return;
 }
 
+// revertCommand revert a change command
 void revertChange(t_command *command, t_text *text) {
-    t_text app;
-    // restore prev data
-    if (command->prevData.lines == NULL && command->start == 1) {
-        // no lines, so text empty
-        text->numLines = 0;
-    } else {
-        app = changeText(text, command->prevData, command->start);
-        free(app.lines);
-        // check if this change append new lines
-        if(command->prevData.numLines < command->data.numLines) {
-            text->numLines -= command->data.numLines - command->prevData.numLines;
-        }
-    }
-    // swap
-    swapText(&(command->prevData), &(command->data));
-    return;
+    swapText(text, &command->prevData);
 }
 
-void swipeEventStack(t_command *command, t_command **old, t_command **new) {
+// revertCommand revert a delete command
+void revertDeleteText(t_text *text, t_command *command) {
+    swapText(text, &command->prevData);
+}
+
+// moveEventBetweenStack move a command between first stack to second stack
+void moveEventBetweenStack(t_command *command, t_command **old, t_command **new) {
     t_command *app;
     // command go to other stack, so set next as head of commands stack
     app = command->next;
@@ -509,27 +601,12 @@ void swipeEventStack(t_command *command, t_command **old, t_command **new) {
     return;
 }
 
-void returnToStart(t_text *text, t_history *history) {
-    // move commands to futureStack
-    for (int i = 0; i < history->commandsToTravel; i++) {
-        // swipe data only for change commands
-        if(history->pastCommands != NULL){
-            if(history->pastCommands->type == 'c') {
-                swapText(&(history->pastCommands->data), &(history->pastCommands->prevData));
-            } else {
-                swapText(text, &(history->pastCommands->prevData));
-            }
-        }
-        swipeEventStack(history->pastCommands, &history->pastCommands, &history->futureCommands);
-    }
-    // zero lines, text deleted
-    text->numLines = 0;
-    history->commandsToTravel = 0;
-    return;
-}
+/* ----------------------------------
+ * ---------- TEXT MANAGER ----------
+ * ----------------------------------
+ */
 
-// ----- TEXT MANAGER -----
-
+// createText create a new empty text struct
 void createText(t_text *text) {
     text->numLines = 0;
     text->lines = malloc(sizeof(char *) * TEXT_BUFFER_SIZE);
@@ -537,6 +614,7 @@ void createText(t_text *text) {
     return;
 }
 
+// printText print text from start to end
 void printText(t_text *text, int start, int end) {
     int numLinesToPrint = end - start + 1;
     int startOffset = start - 1;
@@ -548,6 +626,7 @@ void printText(t_text *text, int start, int end) {
     return;
 }
 
+// changeText modify text from start with data and length given
 t_text changeText(t_text *text, t_text data, int start) {
     t_text prevData;
     int end = start + data.numLines - 1;
@@ -570,6 +649,7 @@ t_text changeText(t_text *text, t_text data, int start) {
     return prevData;
 }
 
+// deleteText delete text from start to end given
 void deleteText(t_text *text, t_command *command) {
 
     int numLinesToDelete = command->end - command->start + 1;
@@ -583,15 +663,13 @@ void deleteText(t_text *text, t_command *command) {
     return;
 }
 
-void revertDeleteText(t_text *text, t_command *command) {
-    swapText(text, &command->prevData);
-}
-
+// readAndOverwriteText overwrite text while reading previous data
 t_text readAndOverwriteText(t_text *text, t_text data, int start, int end) {
     int startOffset = start - 1;
     int numLinesToWrite = 0;
     int currNumLine = 0;
     t_text prevData;
+    int dataCounter = 0;
 
     // check for overflow
     if(end > text->numLines) {
@@ -600,19 +678,37 @@ t_text readAndOverwriteText(t_text *text, t_text data, int start, int end) {
         numLinesToWrite = end - start + 1;
     }
 
-    prevData.numLines = numLinesToWrite;
+    prevData.numLines = text->numLines;
     prevData.lines = malloc(sizeof(char *) * prevData.numLines);
     prevData.buffersAllocated = 0;
 
+    for(int i = 0; i < startOffset; i++) {
+        // save prevData
+        prevData.lines[dataCounter] = text->lines[i];
+        dataCounter++;
+    }
+
     for(int i = 0; i < numLinesToWrite; i++) {
         currNumLine = startOffset + i;
-        prevData.lines[i] = text->lines[currNumLine];
+        // save prevData
+        prevData.lines[dataCounter] = text->lines[currNumLine];
+        dataCounter++;
+        // write data
         text->lines[currNumLine] = data.lines[i];
+    }
+
+    startOffset += numLinesToWrite;
+
+    for(int i = 0; i < text->numLines - startOffset; i++) {
+        // save prevData
+        prevData.lines[dataCounter] = text->lines[startOffset + i];
+        dataCounter++;
     }
 
     return prevData;
 }
 
+// appendText add new text to the end
 void appendText(t_text *text, t_text data, int numLinesAlreadyWritten) {
     int numLinesToWrite = data.numLines - numLinesAlreadyWritten;
     int startOffset = text->numLines;
@@ -625,10 +721,12 @@ void appendText(t_text *text, t_text data, int numLinesAlreadyWritten) {
     return;
 }
 
+// getTextBuffersRequired get buffers required for a text with length given
 int getTextBuffersRequired(int numLines) {
     return numLines / TEXT_BUFFER_SIZE + 1;
 }
 
+// checkAndReallocText check if text needs reallocation
 void checkAndReallocText(t_text *text, int newNumLines) {
     int buffersRequired = getTextBuffersRequired(newNumLines);
     if(buffersRequired > text->buffersAllocated) {
@@ -637,16 +735,7 @@ void checkAndReallocText(t_text *text, int newNumLines) {
     }
 }
 
-t_text getNewTextArea(int numLines) {
-    t_text newText;
-
-    newText.numLines = numLines;
-    newText.buffersAllocated = getTextBuffersRequired(newText.numLines);
-    newText.lines = malloc(sizeof(char *) * newText.buffersAllocated * TEXT_BUFFER_SIZE);
-
-    return newText;
-}
-
+// shiftAndReadText shift text from start to end given while reading previous data
 t_text shiftAndReadText(t_text *text, int start, int end)
 {
     t_text data;
@@ -689,26 +778,12 @@ t_text shiftAndReadText(t_text *text, int start, int end)
     return data;
 }
 
-// createSpaceInMiddleText move lines to create space
-void createSpaceInMiddleText(t_text *text, int numLinesToMove, int newLastLine) {
+/* ------------------------------------------
+ * ---------- UTITILITIES FUNCTION ----------
+ * ------------------------------------------
+ */
 
-    int startOffset = newLastLine - 1;
-    int endOffset = text -> numLines - 1;
-    for(int i = 0; i < numLinesToMove; i++)
-    {
-        // overwrite lines from start to new end
-        text -> lines[startOffset - i] = text -> lines[endOffset - i];
-    }
-}
-
-// ----- UTILITIES FUNCTIONS -----
-
-int stringSize(char *string) {
-    int count = 0;
-    while (string[count] != '\0') count++;
-    return count;
-}
-
+// readLine read a line from stdin
 char *readLine() {
     int i;
     char c;
@@ -731,6 +806,7 @@ char *readLine() {
     return line;
 }
 
+// printLine print a line to stdout
 void printLine(char *line) {
     int i = 0;
     while (line[i] != '\n' && line[i] != '\0') {
@@ -740,6 +816,7 @@ void printLine(char *line) {
     putchar('\n');
 }
 
+// swapText swap text struct
 void swapText(t_text *data1, t_text *data2) {
     t_text app;
     app = *data1;
@@ -747,6 +824,7 @@ void swapText(t_text *data1, t_text *data2) {
     *data2 = app;
 }
 
+// getEmptyTextStruct return an empty text struct
 t_text getEmptyTextStruct() {
     t_text data;
     data.lines = NULL;
@@ -755,6 +833,7 @@ t_text getEmptyTextStruct() {
     return data;
 }
 
+// freeCommand free all area allocated for a command
 void freeCommand(t_command **command) {
 
     if((*command)->type != 'd') {
@@ -767,39 +846,4 @@ void freeCommand(t_command **command) {
 
     free((*command));
     (*command) = NULL;
-}
-
-// ----- MAIN -----
-
-int main() {
-    t_text text;
-    t_history history;
-    t_command *command;
-
-    createText(&text);
-    createHistory(&history);
-
-    /*
-        Execution process:
-        1. read command
-        2. execute command
-        3. update history
-    */
-
-    command = readCommand();
-
-    while (command->type != 'q') {
-        executeCommand(command, &text, &history);
-        updateHistory(&history, command);
-
-        command = readCommand();
-        #ifdef DEBUG
-                printf("Command type: %c\n", command.type);
-                printf("Command start: %d\n", command.start);
-                printf("Command end: %d\n", command.end);
-                printf("Text length: %d\n", text.numLines);
-        #endif
-    }
-
-    return 0;
 }
