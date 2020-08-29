@@ -1,6 +1,4 @@
 BUILD_FILE = ./main.out
-TEST_MESSAGE = && echo "--- TEST SUCCESS ---\n" || echo "!!! --- TEST ERROR --- !!!\n"
-TEST_FOLDER_PATH = ./tests
 
 all: build run
 
@@ -10,10 +8,7 @@ build:
 run:
 	$(BUILD_FILE)
 
-prod: prod-file prod-build prod-run
-
-prod-file:
-	python cminify-1.1.1/minifier.py ./main.c > prod.c
+prod: prod-build prod-run
 
 prod-build:
 	/usr/bin/gcc -DEVAL -std=gnu11 -O2 -pipe -static -s -o prod.out prod.c -lm
