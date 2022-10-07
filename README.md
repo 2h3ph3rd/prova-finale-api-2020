@@ -1,12 +1,11 @@
 # Prova finale API 2020
 
-Questo progetto contiene una soluzione per la prova finale del corso di API 2020 del PoliMi.
+🇮🇹 Questo progetto contiene una soluzione per la prova finale del corso di API 2020 del Polimi.
 
-È stata valutata 30L dal verificatore ed è quindi stata resa pubblica come possibile ispirazione a chi servisse per i futuri progetti.
+🇬🇧 This project was made for the final exam of the course "Algorithms and Principles of Informatics" at Polimi during the year 2020.
 
-Ammetto che la soluzione implementata non sia stata di certo la migliore, ma svolse più che bene il suo scopo.
 
-Per eseguire questo codice:
+### How to run
 
 ```
 make
